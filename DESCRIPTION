@@ -1,11 +1,13 @@
 Package: scjs
-Title: What the Package Does (One Line, Title Case)
+Title: Import, Harmonise and Analyse Scottish Crime and Justice Survey Data
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Stuart", "Napier", , "stuart.napier@gov.scot", role = c("aut", "cre"))
+Description: A package providing functions to import, harmonise and analyse data from the Scottish Crime and Justice Survey (SCJS). Integrates with data available from the UK Data Service (UKDS).
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

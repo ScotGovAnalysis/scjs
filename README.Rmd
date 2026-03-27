@@ -1,0 +1,21 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# scjs
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+A package providing functions to import, harmonise and analyse data from the Scottish Crime and Justice Survey (SCJS). Integrates with data available from the UK Data Service (UKDS).
