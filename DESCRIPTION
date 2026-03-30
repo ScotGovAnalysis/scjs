@@ -1,13 +1,24 @@
 Package: scjs
-Title: Import, Harmonise and Analyse Scottish Crime and Justice Survey Data
+Title: Import, Harmonise and Analyse Scottish Crime and Justice Survey
+    Data
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R: c(
+    person("Scottish Government", , , "statistics.enquiries@gov.scot", role = c("cph", "fnd")),
+    person("Scottish Crime and Justice Survey Team", , , "scjs@gov.scot", role = "aut"),
     person("Stuart", "Napier", , "stuart.napier@gov.scot", role = c("aut", "cre"))
-Description: A package providing functions to import, harmonise and analyse data from the Scottish Crime and Justice Survey (SCJS). Integrates with data available from the UK Data Service (UKDS).
+  )
+Description: A package providing functions to import, harmonise and
+    analyse data from the Scottish Crime and Justice Survey (SCJS).
+    Integrates with data available from the UK Data Service (UKDS).
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    dplyr
+Depends: 
+    R (>= 3.5)
