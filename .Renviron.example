@@ -1,5 +1,8 @@
 # Path to SAS server
-PATH_SAS_SERVER="path/to/sas/server/here"
+PATH_SAS_SERVER="path/to/sas/server/here/"
 
 # Path to SCJS folder on SCJS datashare
-PATH_SG_DATASHARE="path/to/sg/datashare/here"
+PATH_SG_DATASHARE="path/to/sg/datashare/here/"
+
+# Users data path
+USER_DATA_PATH="path/to/your/data/here/"
