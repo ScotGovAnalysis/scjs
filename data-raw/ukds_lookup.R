@@ -4,7 +4,7 @@ ukds_lookup <- dplyr::tribble(
   ~year, ~survey_year, ~nvf_folder, ~nvf_file,
   2008, "2008/09", "UKDA-6362-spss", "scjs_s2_rf_091214.sav",
   2009, "2009/10", "UKDA-6685-spss", "scjs_s3_rf_ukda_110120.sav",
-  2010, "2010/11", "UKDA-7229-spss", "scjs_s4_2010-11-rf_ukda_130115.sav",
+  2010, "2010/11", "UKDA-7229-spss", "scjs_s4_2010-11_rf_ukda_130115.sav",
   2012, "2012/13", "UKDA-7543-spss", "scjs_main_2012_13_5.sav",
   2014, "2014/15", "UKDA-8141-spss", "new_main_2014_15_2_main_dataset.sav",
   2016, "2016/17", "UKDA-8365-spss", "scjs1617_nvf-main_y1_eul.sav",
