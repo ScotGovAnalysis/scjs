@@ -41,7 +41,10 @@ scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns
   }
   scjs_data <- scjs_data[!is.na(scjs_data)]
 
-  # return(full_file_paths)
+  message(paste("Successfully loaded", length(scjs_data), dplyr::if_else(length(scjs_data) > 1, "datasets", "dataset"), "into R inside a list."))
+  message("You can unpack the list into individual datasets with 'list2env(scjs_data, envir=.GlobalEnv)'.")
+
+  return(scjs_data)
 }
 
 check_years <- function(years) {
@@ -97,3 +100,4 @@ read_sav_data <- function(filepath, columns, dataset_type, year) {
   }
   return(data)
 }
+
