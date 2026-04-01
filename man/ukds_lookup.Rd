@@ -7,7 +7,7 @@
 \format{
 \subsection{\code{ukds_lookup}}{
 
-A data frame with 12 rows and 3 columns:
+A data frame with 12 rows and 4 columns:
 \describe{
 \item{year}{Numeric year when most of the fieldwork occurred}
 \item{survey_year}{Formatted value for fieldwork year}
