@@ -1,6 +1,10 @@
 #' Import data downloaded from the UKDS
 #'
 #' @param path A file path to where files downloaded from the UKDS are.
+#' @param dataset_type A short string specifying what type of SCJS dataset to load. Must be one of c("nvf").
+#' @param years_to_load An option to specify what years to try and load in. Must be numeric, can be a single year, vector or range.
+#' @param columns Columns to specify to load in from the call to haven::read_sav()
+#' @param name_prefix If you want to specify a name convention for the loaded data, defaults to dataset type plus year e.g. 'nvf_2024'.
 #'
 #' @return A string
 #' @export
@@ -19,12 +23,11 @@ scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns
 
   # Catch invalid dataset type
   valid_dataset_types <- c("nvf") # expand to include other types in future
-  if(!(dataset_type %in% valid_dataset_types)) stop(paste("Invalid dataset type, must be one of:", valid_dataset_types))
+  if(!(tolower(dataset_type) %in% valid_dataset_types)) stop(paste("Invalid dataset type, must be one of:", valid_dataset_types))
 
   # Get full file paths of data files
   target_folders <- dplyr::pull(ukds_lookup, var = "nvf_folder")
   full_file_paths <- purrr::imap_chr(target_folders, ~fetch_full_path(path=path, lookup=ukds_lookup, index=.y))
-  print(full_file_paths)
 
   # Read spss .sav files found above
   scjs_data <- purrr::map2(full_file_paths, dplyr::pull(ukds_lookup, var = "year"), ~read_sav_data(filepath=.x, columns=columns, dataset_type=dataset_type, year=.y))
@@ -81,8 +84,6 @@ fetch_full_path <- function(path, lookup, index) {
 }
 
 read_sav_data <- function(filepath, columns, dataset_type, year) {
-  print(paste("Attempting to load data for", year))
-
   if(!is.na(filepath)) {
     if(!is.null(columns)) {
       data <- haven::read_sav(filepath, col_select = dplyr::all_of(columns))
