@@ -4,10 +4,6 @@
 #'
 #' @return A string
 #' @export
-#'
-#' @examples
-#' x <- "path/to/data"
-#' scjs_load_ukds(x)
 scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns=NULL, name_prefix=NULL) {
   # Catch invalid years
   if(!is.null(years_to_load)) {
