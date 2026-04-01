@@ -4,7 +4,13 @@
 \alias{scjs_load_ukds}
 \title{Import data downloaded from the UKDS}
 \usage{
-scjs_load_ukds(path = getwd())
+scjs_load_ukds(
+  path,
+  dataset_type = "nvf",
+  years_to_load = NULL,
+  columns = NULL,
+  name_prefix = NULL
+)
 }
 \arguments{
 \item{path}{A file path to where files downloaded from the UKDS are.}
