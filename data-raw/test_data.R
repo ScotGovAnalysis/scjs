@@ -27,4 +27,6 @@ scjs_test_data <- dplyr::bind_rows(df_test_2023, df_test_2024) |>
   dplyr::mutate(serial_test = dplyr::row_number(), .before = 1)
 
 # Save as an internal dataset in sysdata.rda
+usethis::use_data(df_test_2023, internal = TRUE, overwrite = TRUE)
+usethis::use_data(df_test_2024, internal = TRUE, overwrite = TRUE)
 usethis::use_data(scjs_test_data, internal = TRUE, overwrite = TRUE)
