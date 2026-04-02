@@ -3,6 +3,12 @@
 
 # NOTE: your .Renviron file needs to be up to date, see .Renviron.example
 
+# NOTE: you can only create the sysdata.rda in one use_data() call.
+# All data used for internal purposes should be created here.
+# If you need to add more internal data, you must also recreate all other
+# internal objects and save it with the use_data() call with your new objects
+# appended.
+
 path_2023 <- paste0(Sys.getenv("PATH_SAS_SERVER"), "MAIN3_2023_24.sas7bdat")
 path_2024 <- paste0(Sys.getenv("PATH_SAS_SERVER"), "MAIN2_2024_25.sas7bdat")
 
@@ -27,6 +33,4 @@ scjs_test_data <- dplyr::bind_rows(df_test_2023, df_test_2024) |>
   dplyr::mutate(serial_test = dplyr::row_number(), .before = 1)
 
 # Save as an internal dataset in sysdata.rda
-usethis::use_data(df_test_2023, internal = TRUE, overwrite = TRUE)
-usethis::use_data(df_test_2024, internal = TRUE, overwrite = TRUE)
-usethis::use_data(scjs_test_data, internal = TRUE, overwrite = TRUE)
+usethis::use_data(df_test_2023, df_test_2024, scjs_test_data, internal = TRUE, overwrite=TRUE)
