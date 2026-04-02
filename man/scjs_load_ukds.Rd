@@ -23,9 +23,6 @@ scjs_load_ukds(
 
 \item{name_prefix}{If you want to specify a name convention for the loaded data, defaults to dataset type plus year e.g. 'nvf_2024'.}
 }
-\value{
-A string
-}
 \description{
 Import data downloaded from the UKDS
 }
