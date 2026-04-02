@@ -6,7 +6,6 @@
 #' @param columns Columns to specify to load in from the call to haven::read_sav()
 #' @param name_prefix If you want to specify a name convention for the loaded data, defaults to dataset type plus year e.g. 'nvf_2024'.
 #'
-#' @return A string
 #' @export
 scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns=NULL, name_prefix=NULL) {
   # Catch invalid years
