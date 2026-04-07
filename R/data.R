@@ -29,3 +29,18 @@
 #'   ...
 #' }
 "ukds_lookup"
+
+
+#' SCJS NVF Variable Map Overview
+#'
+#' An overview of how variables have changed over time in SCJS data.
+#'
+#'
+#' @format ## `vm_nvf_overview`
+#' A data frame with 463 rows and 21 columns:
+#' \describe{
+#'   \item{section_or_module}{Name of the section where the sheet containing the exact recoding is given}
+#'   \item{var_name}{Name of the variable as it appears in the original SG SCJS data pipeline code}
+#'   ...
+#' }
+"vm_nvf_overview"

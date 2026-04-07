@@ -4,10 +4,12 @@
 \alias{scjs_harmonise_variable}
 \title{Harmonise variables from SCJS datasets}
 \usage{
-scjs_harmonise_variable(target_df)
+scjs_harmonise_variable(original_data, vars)
 }
 \arguments{
-\item{target_df}{The dataset that you want to harmonised variables to be added to}
+\item{original_data}{A list containing the original SCJS datasets to harmonise from}
+
+\item{vars}{A vector of variables to be harmonised and placed into the target data frame}
 }
 \description{
 Harmonises variables from individual SCJS datasets into a target single multi-year dataset.
