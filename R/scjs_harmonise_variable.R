@@ -17,4 +17,4 @@ scjs_harmonise_variable <- function(original_data, vars) {
   if(!is.character(vars)) stop("The list of variables to harmonise must be a character or vector of characters.")
 }
 
-# scjs_data <- list(nvf_2023=df_test_2023, nvf_2024=df_test_2024)
+
