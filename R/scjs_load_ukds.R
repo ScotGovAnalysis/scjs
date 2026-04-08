@@ -94,7 +94,7 @@ fetch_full_path <- function(path, lookup, index) {
 read_sav_data <- function(filepath, columns, dataset_type, year) {
   if(!is.na(filepath)) {
     if(!is.null(columns)) {
-      data <- haven::read_sav(filepath, col_select = dplyr::all_of(columns))
+      data <- haven::read_sav(filepath, col_select = c(dplyr::starts_with("serial"), dplyr::all_of(columns)))
     } else {
       data <- haven::read_sav(filepath)
     }
@@ -110,6 +110,6 @@ add_year_var <- function(df, year) {
   if("year" %in% names(df)) {
     return(df)
   } else {
-    df <- dplyr::mutate(df, year = year)
+    df <- dplyr::mutate(df, year = year, .before=1)
   }
 }

@@ -9,6 +9,7 @@ scjs_load_ukds(
   dataset_type = "nvf",
   years_to_load = NULL,
   columns = NULL,
+  lowercase_cols = TRUE,
   name_prefix = NULL
 )
 }
@@ -20,6 +21,8 @@ scjs_load_ukds(
 \item{years_to_load}{An option to specify what years to try and load in. Must be numeric, can be a single year, vector or range.}
 
 \item{columns}{Columns to specify to load in from the call to haven::read_sav()}
+
+\item{lowercase_cols}{TRUE/FALSE whether columns loaded in are forced to lower case.}
 
 \item{name_prefix}{If you want to specify a name convention for the loaded data, defaults to dataset type plus year e.g. 'nvf_2024'.}
 }

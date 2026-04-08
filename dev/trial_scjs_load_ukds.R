@@ -11,9 +11,9 @@ vars_to_load <- c(
 )
 
 
-trial_load <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), years_to_load = 2018:2019, columns = vars_to_load)
+scjs_data <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), years_to_load = 2018:2019, columns = vars_to_load)
 
-list2env(trial_load, envir=.GlobalEnv)
+list2env(scjs_data, envir=.GlobalEnv)
 
 "year" %in% names(trial_load[[1]])
 "year" %in% names(trial_load[[2]])
