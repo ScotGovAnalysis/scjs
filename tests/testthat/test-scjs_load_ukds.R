@@ -76,7 +76,7 @@ test_that("scjs_load_ukds() loads correct number of datasets", {
   mockery::stub(scjs_load_ukds, "fetch_full_path", mock_fetch)
   mockery::stub(scjs_load_ukds, "read_sav_data", mock_read)
 
-  out <- scjs_load_ukds(".", years_to_load = c(2016, 2017))
+  out <- suppressMessages(scjs_load_ukds(".", years_to_load = c(2016, 2017)))
   expect_length(out, 2)
   expect_named(out, c("nvf_2016", "nvf_2017"))
 })
@@ -91,9 +91,24 @@ test_that("scjs_load_ukds() drops NA results", {
   mockery::stub(scjs_load_ukds, "read_sav_data", mock_read)
   mockery::stub(scjs_load_ukds, "purrr::set_names", mock_result)
 
-  out <- scjs_load_ukds(".", years_to_load = c(2016, 2017))
+  out <- suppressMessages(scjs_load_ukds(".", years_to_load = c(2016, 2017)))
   expect_length(out, 1)
   expect_named(out, "nvf_2017")
+})
+
+test_that("scjs_load_ukds() returns lowercase columns when specified in call", {
+  mock_fetch <- function(...) "mock.sav"
+  mock_read  <- function(...) data.frame(A=1)
+  # mock_result <- list(nvf_2016=data.frame(a=1))
+
+  mockery::stub(scjs_load_ukds, "fetch_full_path", mock_fetch)
+  mockery::stub(scjs_load_ukds, "read_sav_data", mock_read)
+  # mockery::stub(scjs_load_ukds, "purrr::set_names", mock_result)
+
+  out1 <- suppressMessages(scjs_load_ukds(".", years_to_load = c(2016), lowercase_cols = TRUE))
+  out2 <- suppressMessages(scjs_load_ukds(".", years_to_load = c(2016), lowercase_cols = FALSE))
+  expect_true("a" %in% names(out1[[1]]))
+  expect_true("A" %in% names(out2[[1]]))
 })
 
 test_that("scjs_load_ukds() returns name prefix", {
@@ -105,7 +120,7 @@ test_that("scjs_load_ukds() returns name prefix", {
   mockery::stub(scjs_load_ukds, "read_sav_data", mock_read)
   mockery::stub(scjs_load_ukds, "purrr::set_names", mock_result)
 
-  out <- scjs_load_ukds(".", years_to_load = c(2015, 2016), name_prefix = "test_prefix")
+  out <- suppressMessages(scjs_load_ukds(".", years_to_load = c(2015, 2016), name_prefix = "test_prefix"))
   expect_length(out, 1)
   expect_named(out, "test_prefix_2016")
 })

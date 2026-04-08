@@ -4,10 +4,11 @@
 #' @param dataset_type A short string specifying what type of SCJS dataset to load. Must be one of c("nvf").
 #' @param years_to_load An option to specify what years to try and load in. Must be numeric, can be a single year, vector or range.
 #' @param columns Columns to specify to load in from the call to haven::read_sav()
+#' @param lowercase_cols TRUE/FALSE whether columns loaded in are forced to lower case.
 #' @param name_prefix If you want to specify a name convention for the loaded data, defaults to dataset type plus year e.g. 'nvf_2024'.
 #'
 #' @export
-scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns=NULL, name_prefix=NULL) {
+scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns=NULL, lowercase_cols=TRUE, name_prefix=NULL) {
   # Catch invalid years
   if(!is.null(years_to_load)) {
     if(!is.numeric(years_to_load)) stop("Argument 'years_to_load' must be a numeric value or vector")
@@ -30,6 +31,14 @@ scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns
 
   # Read spss .sav files found above
   scjs_data <- purrr::map2(full_file_paths, dplyr::pull(ukds_lookup, var = "year"), ~read_sav_data(filepath=.x, columns=columns, dataset_type=dataset_type, year=.y))
+
+  # Add a variable for year to the loaded datasets
+  scjs_data <- purrr::map2(scjs_data, dplyr::pull(ukds_lookup, var = "year"), ~ add_year_var(.x, .y))
+
+  # Convert column names to lowercase if specified (TRUE by default)
+  if(lowercase_cols) {
+    scjs_data <- purrr::map(scjs_data, ~ dplyr::rename_with(.x, tolower))
+  }
 
   # Name the output datasets and filter for only sucessful results
   if(!is.null(name_prefix)) {
@@ -97,4 +106,10 @@ read_sav_data <- function(filepath, columns, dataset_type, year) {
   return(data)
 }
 
-
+add_year_var <- function(df, year) {
+  if("year" %in% names(df)) {
+    return(df)
+  } else {
+    df <- dplyr::mutate(df, year = year)
+  }
+}
