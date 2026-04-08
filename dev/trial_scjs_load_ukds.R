@@ -1,5 +1,5 @@
 vars_to_load <- c(
-    "SERIAL2",
+    # "SERIAL2",
     "PREVPROPERTY", # crime - combined weight
     "PREVVIOLENT", # crime - individually weighted
     "PREVHOUSEBREAK", # crime - household weight
