@@ -18,24 +18,32 @@ scjs_harmonise_variable <- function(df_list, var_list, names_from="original", va
   # Check that var_list is a character
   if(!is.character(var_list)) stop("The list of variables to harmonise must be a character or vector of characters.")
 
-  # find our what the years in the data list
-  years_vec <- extract_year_var(df_list)
-  print(years_vec)
-  latest_year <- max(years_vec)
-  print(paste("latest_year:", latest_year))
-
   # check names_from validity
   valid_names_from <- c("pipeline", "original")
   if(!names_from %in% valid_names_from) {
     stop(paste("argument 'names_from' must be one of:", valid_names_from))
   }
 
+  # check keep_all_vars validity
+  if(!is.logical(keep_all_vars)) {
+    stop("Argument keep all vars must be TRUE or FALSE.")
+  }
+
+  # find our what the years are in the data list
+  years_vec <- extract_year_var(df_list)
+  print(years_vec)
+  latest_year <- max(years_vec)
+  print(paste("latest_year:", latest_year))
+
+
+
   # subset the variable map to the relevant parts
   vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, keep_all_vars)
   unique_var_list <- dplyr::pull(vm_sub, var="var_name")
 
   print(vm_sub)
-  purrr::imap(var_list, ~ print(paste("var", .y, .x)))
+  print(unique_var_list)
+
 }
 
 
@@ -46,14 +54,42 @@ extract_year_var <- function(df) {
       stop(paste("variable 'year' is not in data frame:", df))
     } else {
       year <- df$year[1]
+      if(!is.numeric(year)) {
+        year <- convert_financial_year(year)
+      }
     }
   } else {
     year <- purrr::map_vec(df, ~extract_year_var(.x))
   }
+  return(year)
+}
+
+# function to coerce financial year to numeric?
+convert_financial_year <- function(year) {
+  # regex for financial year
+  finyr_regex <- stringr::str_detect(year, "\\b\\d{2,4}/?\\d{2}\\b")
+  if(finyr_regex){
+    year_as_num <- stringr::str_extract(year, "\\b\\d{2,}")
+    if(stringr::str_length(year_as_num) == 2) {
+      year_as_num <- 2000 + as.numeric(year_as_num)
+    } else if (stringr::str_length(year_as_num) == 4) {
+      year_as_num <- as.numeric(year_as_num)
+    } else {
+      stop("Length of extracted year is not of length 2 or 4.")
+    }
+  } else {
+    stop("Could not convert item in year to numeric.")
+  }
+  return(year_as_num)
 }
 
 
+
 subset_variable_map <- function(variable_map, var_list, years_vec, names_from, keep_all_vars) {
+
+  if(!is.numeric(years_vec)) {
+    stop("The extracted years is not a numeric vector.")
+  }
 
   latest_year <- max(years_vec)
 
@@ -111,7 +147,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
       vm_sub_final <- vm_grp
     }
 
-    print(vm_grp)
+    # print(vm_grp)
   }
 
   if(names_from == "pipeline") {
@@ -121,7 +157,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
       dplyr::select(var_name) |>
       dplyr::pull()
     vm_sub_final <- vm_init
-    print(vm_sub_final)
+    # print(vm_sub_final)
   }
 
   if(nrow(vm_sub_final) == 0) {
@@ -134,8 +170,8 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
     warning(paste("Unable to match all variables requested.", "\n", "Could not find:", paste(vars_not_found, collapse=", ")))
   }
 
-
-  # Check to see if all variables were found
+  vm_sub_final <- vm_sub_final |>
+    dplyr::select(var_name, var_type, all_of(as.character(years_vec)), requires_recoding)
 
   return(vm_sub_final)
 }
