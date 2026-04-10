@@ -1,19 +1,24 @@
 # Test scjs_harmonise_variable()
 
+test_that("scjs_harmonise_variable() throws an error when .data is not properly set", {
+  expect_error(scjs_harmonise_variable(df_list = c("abc", "def"), var_list = c("xyz")), "`data` must be supplied")
+  expect_error(scjs_harmonise_variable(.data = "abc", df_list = c("abc", "def"), var_list = c("xyz")), "must be a data frame")
+})
+
 test_that("scjs_harmonise_variable() gives an error when the original data is not a list", {
-  expect_error(scjs_harmonise_variable(df_list = c("abc", "def"), var_list = c("xyz")), "must be a list")
+  expect_error(scjs_harmonise_variable(.data = "create", df_list = c("abc", "def"), var_list = c("xyz")), "must be a list")
 })
 
 test_that("scjs_harmonise_variable() gives an error when the vars to harmonise is not a character", {
-  expect_error(scjs_harmonise_variable(df_list = list("abc", "def"), var_list = 1), "must be a character")
+  expect_error(scjs_harmonise_variable(.data = "create", df_list = list("abc", "def"), var_list = 1), "must be a character")
 })
 
 test_that("scjs_harmonise_variable() gives an error when the names_from arg is invalid", {
-  expect_error(scjs_harmonise_variable(df_list = list(data.frame(year=2000), data.frame(year=2001)), var_list = "abc", names_from="err"), "'names_from' must be one of")
+  expect_error(scjs_harmonise_variable(.data = "create", df_list = list(data.frame(year=2000), data.frame(year=2001)), var_list = "abc", names_from="err"), "'names_from' must be one of")
 })
 
 test_that("scjs_harmonise_variable() gives an error when keep_all_vars is not TRUE or FALSE", {
-  expect_error(scjs_harmonise_variable(df_list = list(data.frame(year=2000), data.frame(year=2001)), var_list = "abc", keep_all_vars = "abc"), "must be TRUE or FALSE")
+  expect_error(scjs_harmonise_variable(.data = "create", df_list = list(data.frame(year=2000), data.frame(year=2001)), var_list = "abc", keep_all_vars = "abc"), "must be TRUE or FALSE")
 })
 
 # Test extract_year_var()
