@@ -11,7 +11,7 @@ subset_variable_map("vm_nvf_overview", c("wgtgindiv", "wgtghhd"), c(2021), names
 subset_variable_map("vm_nvf_overview", c("weight_indiv"), c(2021), names_from="pipeline")
 
 
-scjs_harmonise_variable(scjs_data, c("wgtgindiv", "wgtghhd"))
+scjs_harmonise_variable(.data="create", scjs_data, c("wgtgindiv", "wgtghhd"))
 scjs_harmonise_variable(scjs_data, c("wgtgindiv", "wgtghhd"), keep_all_vars = TRUE)
 scjs_harmonise_variable(scjs_data, c("weight_indiv", "weight_household"), names_from="pipeline")
 

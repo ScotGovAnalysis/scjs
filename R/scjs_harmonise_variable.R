@@ -3,7 +3,7 @@
 #' @description
 #' Harmonises variables from individual SCJS datasets into a target single multi-year dataset.
 #'
-#'
+#' @param .data A dataframe to add the harmonised variables to, can be set to "create" to start from scratch
 #' @param df_list A list containing the original SCJS datasets to harmonise from
 #' @param var_list A vector of variables to be harmonised and placed into the target data frame
 #' @param names_from Indicates the method to look for variables in the variable map
@@ -11,7 +11,20 @@
 #' @param keep_all_vars TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names
 #'
 #' @export
-scjs_harmonise_variable <- function(df_list, var_list, names_from="original", variable_map="vm_nvf_overview", keep_all_vars=FALSE) {
+scjs_harmonise_variable <- function(.data="create", df_list, var_list, names_from="original", variable_map="vm_nvf_overview", keep_all_vars=FALSE) {
+
+  if (missing(.data)) {
+    stop("`data` must be supplied, either directly or via a pipe.", call. = FALSE)
+  }
+
+  if(.data == "create") {
+    .data <- data.frame()
+  }
+
+  if(!is.data.frame(.data)) {
+    stop(".data must be a data frame.")
+  }
+
   # Check that original data is a list
   if(!is.list(df_list)) stop("The original data supplied must be a list.")
 
@@ -174,4 +187,6 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
     dplyr::select(var_name, var_type, all_of(as.character(years_vec)), requires_recoding)
 
   return(vm_sub_final)
+
+  # input list of dataframes, input subset of variable map
 }
