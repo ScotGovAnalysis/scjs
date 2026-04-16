@@ -1,3 +1,5 @@
+# A script to document the datasets used in the package
+
 #' SCJS Design Factor Information
 #'
 #' A small data set containing the values of the generic design factor for each
