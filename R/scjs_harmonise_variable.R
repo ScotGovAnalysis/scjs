@@ -11,13 +11,13 @@
 #' @param keep_all_vars TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names
 #'
 #' @export
-scjs_harmonise_variable <- function(.data="create", df_list, var_list, names_from="original", variable_map="vm_nvf_overview", keep_all_vars=FALSE) {
+scjs_harmonise_variable <- function(.data="create", df_list, var_list, names_from="original", variable_map=vm_nvf$overview, keep_all_vars=FALSE) {
 
   if (missing(.data)) {
     stop("`data` must be supplied, either directly or via a pipe.", call. = FALSE)
   }
 
-  if(.data == "create") {
+  if(all(.data == "create")) {
     .data <- data.frame()
   }
 
@@ -48,11 +48,11 @@ scjs_harmonise_variable <- function(.data="create", df_list, var_list, names_fro
   latest_year <- max(years_vec)
   print(paste("latest_year:", latest_year))
 
-
-
   # subset the variable map to the relevant parts
   vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, keep_all_vars)
   unique_var_list <- dplyr::pull(vm_sub, var="var_name")
+
+  # perform the transformations for harmonisation
 
   print(vm_sub)
   print(unique_var_list)
@@ -107,7 +107,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
   latest_year <- max(years_vec)
 
   if(names_from == "original") {
-    vm_init <- get(variable_map) |>
+    vm_init <- variable_map |>
       dplyr::filter(.data[[as.character(latest_year)]] %in% var_list)
 
     vm_check_list <- vm_init |>
@@ -164,7 +164,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
   }
 
   if(names_from == "pipeline") {
-    vm_init <- get(variable_map) |>
+    vm_init <- variable_map |>
       dplyr::filter(var_name %in% var_list)
     vm_check_list <- vm_init |>
       dplyr::select(var_name) |>
@@ -184,7 +184,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
   }
 
   vm_sub_final <- vm_sub_final |>
-    dplyr::select(var_name, var_type, all_of(as.character(years_vec)), requires_recoding)
+    dplyr::select(section_or_module, var_name, var_type, all_of(as.character(years_vec)), requires_recoding)
 
   return(vm_sub_final)
 

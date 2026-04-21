@@ -50,4 +50,4 @@ test_that("convert_financial_year() rejects invalid inpurs ", {
 })
 
 # Test subset_variable_map()
-test_that("subset_variable_map()")
+
