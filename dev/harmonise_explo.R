@@ -50,12 +50,83 @@ scjs_harmonise_variable(data.frame(0), scjs_data, c("weight_indiv", "askdjfhaks"
 
 # read in the relevant section of the variable map with the recoding instructions
 
-vm_sub <- subset_variable_map("vm_nvf_overview", c("wgtgindiv", "qsfdark"), c(2018, 2019), names_from="original", keep_all_vars = F)
-df_test <- nvf_2019 |> dplyr::select(serial2, wgtgindiv, qsfdark)
+vm_sub <- subset_variable_map(vm_nvf$overview, c("wgtgindiv", "prevviolent", "qsfdark"), c(2018, 2019), names_from="original", keep_all_vars = F)
+df_test <- nvf_2019 |> dplyr::select(serial2, year, wgtgindiv, prevviolent, qsfdark)
 
 harmonise_func <- function(dataset, variable_map, options) {
 
-  # get the variable map sections
+  # get the variable map sections - necessary if the package can see all of them anyway?
+  vm_sections <- dplyr::pull(variable_map, var = "section_or_module")
 
+  # extract the variables from the variable map subset(s)
+
+  # sort the variable maps into groups? - would this speed things up? - probably if have to split variable map into list etc.
+  # or join the variable map sub sheets?
+
+  # reduce the dataset to only the necessary variables?
 
 }
+
+
+vm_split <- split(vm_sub, vm_sub$section_or_module)
+
+vm_split[1]
+
+vm_nvf[["demographics"]] |> dplyr::filter(new_var %in% c("feelings_of_safety_tabulated"))
+
+lookup <- vm_nvf[["demographics"]] |>
+  dplyr::filter(new_var %in% c("feelings_of_safety_tabulated")) |>
+  (\(data) {
+    vars <- split(data, data$new_var)
+    purrr::map(vars, \(x) setNames(x$new_val, x$old_val))
+  })()
+
+df_test <- df_test |>
+  dplyr::mutate(feelings_of_safety_tabulated = qsfdark, .after = qsfdark)
+
+var <- "feelings_of_safety_tabulated"
+
+#works (but need to copy the variable)
+df_test <- df_test |>
+  (\(d) {
+    d[[var]] <- factor(
+      lookup[[var]][as.character(d[[var]])], # look at the thing in the column of interest, find the thing with that name in lookup, returning the value
+      levels = unique(lookup[[var]]) # don't strictly need levels
+    )
+    d
+  })()
+
+# works with no levels
+df_test <- df_test |>
+  (\(d) {
+    d[[var]] <- factor(
+      lookup[[var]][as.character(d[[var]])] # look at the thing in the column of interest, find the thing with that name in lookup, returning the value
+    )
+    d
+  })()
+
+# works but still has explicit references to col names
+df_test <- df_test |>
+  dplyr::mutate(
+    qsfdark = factor(
+      lookup[[var]][as.character(qsfdark)],
+      levels = unique(lookup[[var]])
+    )
+  )
+
+# works as across and anonymous function, still uses direct reference to 'pipeline var' name
+df_test <- df_test |>
+  dplyr::mutate(
+    dplyr::across(
+      all_of("qsfdark"),
+      \(x) factor(
+        lookup[[var]][as.character(x)],
+        levels = unique(lookup[[var]])
+      )
+    )
+  )
+lookup[["feelings_of_safety_tabulated"]][as.character(-2)]
+
+# looks up the element with the name "4" - and returns the corresponding value - double [[]] in second part returns just the value itself
+lookup[["feelings_of_safety_tabulated"]]["4"]
+lookup[["feelings_of_safety_tabulated"]][["4"]] + 5
