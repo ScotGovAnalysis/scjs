@@ -50,48 +50,111 @@ scjs_harmonise_variable(data.frame(0), scjs_data, c("weight_indiv", "askdjfhaks"
 
 # read in the relevant section of the variable map with the recoding instructions
 
-vm_sub <- subset_variable_map(vm_nvf$overview, c("wgtgindiv", "prevviolent", "qsfdark"), c(2018, 2019), names_from="original", keep_all_vars = F)
-df_test <- nvf_2019 |> dplyr::select(serial2, year, wgtgindiv, prevviolent, qsfdark)
+vm_sub <- subset_variable_map(vm_nvf$overview, c("wgtgindiv", "prevviolent", "qsfdark", "qcondit and qlimit"), c(2018, 2019), names_from="original", keep_all_vars = F)
+df_test <- nvf_2019 |> dplyr::select(serial2, year, wgtgindiv, prevviolent, qsfdark, qcondit, qlimit)
 
-harmonise_func <- function(dataset, variable_map, options) {
+harmonise_func <- function(dataset, variable_map, options=NA) {
 
-  # get the variable map sections - necessary if the package can see all of them anyway?
-  vm_sections <- dplyr::pull(variable_map, var = "section_or_module")
+  # grab the year of the dataset
+  year <- dplyr::pull(dataset, var = year)[1]
 
-  # extract the variables from the variable map subset(s)
+  # process the variable maps
+  vm_preprocess <- vm_process(vm_sub, year)
+  vm_split <- split(vm_preprocess, vm_preprocess[["new_var"]])
+  print(vm_preprocess)
+  print(vm_split)
 
-  # sort the variable maps into groups? - would this speed things up? - probably if have to split variable map into list etc.
-  # or join the variable map sub sheets?
+  # create the list structure for the combined variable map
+  vm_processed_list <- split(vm_preprocess, vm_preprocess[["new_var"]]) |>
+    purrr::map(~ setNames(.$new_val, .$old_val))
+  print(vm_processed_list)
 
-  # reduce the dataset to only the necessary variables?
+  # preprocess the dataset
+  df_preprocess <- purrr::reduce(vm_split, harmonise_preprocess_df, .init = dataset)
+
+  # replace the preprocessed values with the new harmonised variable values
+  df_processed <- purrr::reduce2(vm_processed_list, names(vm_processed_list), harmonise_replace_values, .init = df_preprocess)
+
 
 }
 
+# Filters the relevant variable map sheet to just the variables being processed
+get_var_maps <- function(vm, vm_sheet) {
 
-vm_split <- split(vm_sub, vm_sub$section_or_module)
+  if (is.null(vm[[names(vm_sheet)]])) return(list())
 
-vm_split[1]
+  vm_int <- vm[[names(vm_sheet)]] |>
+    dplyr::filter(new_var %in% names(vm_sheet[[1]]),
+                  old_var %in% vm_sheet[[1]]) |>
+    dplyr::mutate(across(c(old_val, new_val), ~ as.character(stringr::str_replace(.x, " ", ""))))
+}
 
-vm_nvf[["demographics"]] |> dplyr::filter(new_var %in% c("feelings_of_safety_tabulated"))
+# Takes the subset variable map and processes it to gather actual data recoding
+vm_process <- function(vm, year, root_vm=vm_nvf) {
+  vm_split <- split(vm_sub, vm_sub[["section_or_module"]]) |>
+    purrr::map(~ setNames(.[[as.character(year)]], .$var_name))
 
-lookup <- vm_nvf[["demographics"]] |>
-  dplyr::filter(new_var %in% c("feelings_of_safety_tabulated")) |>
-  (\(data) {
-    vars <- split(data, data$new_var)
-    purrr::map(vars, \(x) setNames(x$new_val, x$old_val))
-  })()
+  vm_maps <- purrr::lmap(vm_split, ~ get_var_maps(root_vm, .x)) |>
+    purrr::list_rbind()
 
-df_test <- df_test |>
-  dplyr::mutate(feelings_of_safety_tabulated = qsfdark, .after = qsfdark)
+  return(vm_maps)
+}
 
-var <- "feelings_of_safety_tabulated"
+harmonise_preprocess_df <- function(dataset, vm_slice) {
+
+  # check if any preprocessing is required
+  old_var <- vm_slice$old_var[1]
+  new_var <- vm_slice$new_var[1]
+
+  old_var_processed <- dplyr::case_when(stringr::str_detect(old_var, " and ") ~ stringr::str_split_1(old_var, " and | or "),
+                                        stringr::str_detect(old_var, " or ") ~ stringr::str_split_1(old_var, " and | or "),
+                                        TRUE ~ old_var)
+  # length(old_var_processed)
+
+  if (length(old_var_processed) == 1) {
+    dataset <- dataset |>
+      dplyr::mutate("{new_var}" := dataset[[old_var]], .after = old_var_processed)
+  } else if (length(old_var_processed) > 1) {
+    dataset <- dataset |>
+      dplyr::mutate(
+        "{new_var}" := do.call(
+          paste,
+          c(dplyr::across(all_of(old_var_processed)), sep = ",")
+        ),
+        .after = old_var_processed[length(old_var_processed)]
+      )
+  }
+  return(dataset)
+
+}
+
+harmonise_replace_values <- function(dataset, vm_processed_list_slice, var) {
+
+  # var <- name(vm_processed_list_slice)
+  # reconstruct the list
+  vm_processed_list_slice <- list(vm_processed_list_slice)
+  names(vm_processed_list_slice) <- var
+
+  dataset[[var]] <- factor(
+    vm_processed_list_slice[[var]][as.character(dataset[[var]])] # look at the thing in the column of interest, find the thing with that name in lookup, returning the value
+  )
+  print(dataset[,1:10])
+
+}
+
+df_preprocessed <- harmonise_func(df_test, vm_sub)
+df_processed <- harmonise_func(df_test, vm_sub)
+
+
+
+
 
 #works (but need to copy the variable)
 df_test <- df_test |>
   (\(d) {
     d[[var]] <- factor(
-      lookup[[var]][as.character(d[[var]])], # look at the thing in the column of interest, find the thing with that name in lookup, returning the value
-      levels = unique(lookup[[var]]) # don't strictly need levels
+      vm_processed[[var]][as.character(d[[var]])], # look at the thing in the column of interest, find the thing with that name in vm_processed, returning the value
+      levels = unique(vm_processed[[var]]) # don't strictly need levels
     )
     d
   })()
@@ -130,3 +193,13 @@ lookup[["feelings_of_safety_tabulated"]][as.character(-2)]
 # looks up the element with the name "4" - and returns the corresponding value - double [[]] in second part returns just the value itself
 lookup[["feelings_of_safety_tabulated"]]["4"]
 lookup[["feelings_of_safety_tabulated"]][["4"]] + 5
+
+
+vm_split <- split(vm_sub, vm_sub[["section_or_module"]]) |>
+  purrr::map(~ setNames(.[["2018"]], .$var_name))
+
+lookup <- dict %>%
+  mutate(Value = as.character(Value)) %>%
+  filter(Var %in% variables) %>%
+  split(.$Var) %>%
+  map(~ setNames(.$Label, .$Value))

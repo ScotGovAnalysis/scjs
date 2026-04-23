@@ -6,6 +6,8 @@ vars_to_load <- c(
     "QSFDARK", # full sample question - can be aggregated
     "QDCONF_03", # partial sample question
     "SIMD_15MOST", # demographic
+    "QCONDIT",
+    "QLIMIT",
     "WGTGINDIV", # individual weight
     "WGTGHHD" # household weight
 )
