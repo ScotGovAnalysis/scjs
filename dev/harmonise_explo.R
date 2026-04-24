@@ -53,21 +53,27 @@ scjs_harmonise_variable(data.frame(0), scjs_data, c("weight_indiv", "askdjfhaks"
 vm_sub <- subset_variable_map(vm_nvf$overview, c("wgtgindiv", "prevviolent", "qsfdark", "qcondit and qlimit"), c(2018, 2019), names_from="original", keep_all_vars = F)
 df_test <- nvf_2019 |> dplyr::select(serial2, year, wgtgindiv, prevviolent, qsfdark, qcondit, qlimit)
 
-harmonise_func <- function(dataset, variable_map, options=NA) {
+process_harmonise_df <- function(dataset, variable_map, keep_columns_as="labels") {
 
   # grab the year of the dataset
   year <- dplyr::pull(dataset, var = year)[1]
 
   # process the variable maps
-  vm_preprocess <- vm_process(vm_sub, year)
-  vm_split <- split(vm_preprocess, vm_preprocess[["new_var"]])
-  print(vm_preprocess)
-  print(vm_split)
+  vm_combined <- vm_combine_sheets(vm_sub, year) # combine relevant sections from individual sheets
+  vm_split <- split(vm_combined, vm_combined[["new_var"]]) # split the combined vm into a list of dfs
 
   # create the list structure for the combined variable map
-  vm_processed_list <- split(vm_preprocess, vm_preprocess[["new_var"]]) |>
-    purrr::map(~ setNames(.$new_val, .$old_val))
-  print(vm_processed_list)
+  if (!(keep_columns_as %in% c("data", "labels"))) {
+    stop("Argument keep_columns_as must be equal to one of: 'data' or 'labels'.")
+  }
+
+  # control inputs to vm_split_to_lists() based on value in 'keep_columns_as'
+  if (keep_columns_as == "labels") {
+    vm_processed_list <- vm_split_to_lists(vm_combined, old_col = "old_val", new_col = "new_lab")
+  } else if (keep_columns_as == "data") {
+    vm_processed_list <- vm_split_to_lists(vm_combined, old_col = "old_val", new_col = "new_val")
+  }
+
 
   # preprocess the dataset
   df_preprocess <- purrr::reduce(vm_split, harmonise_preprocess_df, .init = dataset)
@@ -75,14 +81,17 @@ harmonise_func <- function(dataset, variable_map, options=NA) {
   # replace the preprocessed values with the new harmonised variable values
   df_processed <- purrr::reduce2(vm_processed_list, names(vm_processed_list), harmonise_replace_values, .init = df_preprocess)
 
+  return(df_processed)
 
 }
 
 # Filters the relevant variable map sheet to just the variables being processed
 get_var_maps <- function(vm, vm_sheet) {
 
+  # not all vars passed will have a recoded version, so return a blank list when that happens
   if (is.null(vm[[names(vm_sheet)]])) return(list())
 
+  # filter to only the relevant info to recode for that year - convert to string and remove any spaces for ease
   vm_int <- vm[[names(vm_sheet)]] |>
     dplyr::filter(new_var %in% names(vm_sheet[[1]]),
                   old_var %in% vm_sheet[[1]]) |>
@@ -90,15 +99,24 @@ get_var_maps <- function(vm, vm_sheet) {
 }
 
 # Takes the subset variable map and processes it to gather actual data recoding
-vm_process <- function(vm, year, root_vm=vm_nvf) {
+vm_combine_sheets <- function(vm, year, root_vm=vm_nvf) {
+
+  # group the starting subset vm into sections
   vm_split <- split(vm_sub, vm_sub[["section_or_module"]]) |>
     purrr::map(~ setNames(.[[as.character(year)]], .$var_name))
 
-  vm_maps <- purrr::lmap(vm_split, ~ get_var_maps(root_vm, .x)) |>
+  # go through each section containing vars to be processed and return a combined variable map
+  vm_combined <- purrr::lmap(vm_split, ~ get_var_maps(root_vm, .x)) |>
     purrr::list_rbind()
 
-  return(vm_maps)
+  return(vm_combined)
 }
+
+vm_split_to_lists <- function(vm_split, old_col="old_val", new_col="new_val") {
+  vm_processed_lists <- split(vm_split, vm_split[["new_var"]]) |>
+    purrr::map(~ setNames(.[[new_col]], .[[old_col]]))
+}
+
 
 harmonise_preprocess_df <- function(dataset, vm_slice) {
 
@@ -113,7 +131,7 @@ harmonise_preprocess_df <- function(dataset, vm_slice) {
 
   if (length(old_var_processed) == 1) {
     dataset <- dataset |>
-      dplyr::mutate("{new_var}" := dataset[[old_var]], .after = old_var_processed)
+      dplyr::mutate("{new_var}" := dataset[[old_var]], .after = all_of(old_var_processed))
   } else if (length(old_var_processed) > 1) {
     dataset <- dataset |>
       dplyr::mutate(
@@ -130,20 +148,18 @@ harmonise_preprocess_df <- function(dataset, vm_slice) {
 
 harmonise_replace_values <- function(dataset, vm_processed_list_slice, var) {
 
-  # var <- name(vm_processed_list_slice)
-  # reconstruct the list
+
+  # reconstruct the list - necessary as the 'metadata' doesn't get passed when calling purrr::reduce()
   vm_processed_list_slice <- list(vm_processed_list_slice)
   names(vm_processed_list_slice) <- var
 
   dataset[[var]] <- factor(
-    vm_processed_list_slice[[var]][as.character(dataset[[var]])] # look at the thing in the column of interest, find the thing with that name in lookup, returning the value
+    vm_processed_list_slice[[var]][as.character(dataset[[var]])] # look at the thing in the column of interest, find the thing with that name in lookup list, and return the value of the thing with that name
   )
-  print(dataset[,1:10])
 
 }
 
-df_preprocessed <- harmonise_func(df_test, vm_sub)
-df_processed <- harmonise_func(df_test, vm_sub)
+df_processed <- process_harmonise_df(df_test, vm_sub)
 
 
 
@@ -188,18 +204,7 @@ df_test <- df_test |>
       )
     )
   )
-lookup[["feelings_of_safety_tabulated"]][as.character(-2)]
-
-# looks up the element with the name "4" - and returns the corresponding value - double [[]] in second part returns just the value itself
-lookup[["feelings_of_safety_tabulated"]]["4"]
-lookup[["feelings_of_safety_tabulated"]][["4"]] + 5
 
 
-vm_split <- split(vm_sub, vm_sub[["section_or_module"]]) |>
-  purrr::map(~ setNames(.[["2018"]], .$var_name))
-
-lookup <- dict %>%
-  mutate(Value = as.character(Value)) %>%
-  filter(Var %in% variables) %>%
-  split(.$Var) %>%
-  map(~ setNames(.$Label, .$Value))
+df <- data.frame() |>
+  scjs_harmonise_variable(scjs_data, var_list = c("disability"), names_from = "pipeline")
