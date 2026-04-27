@@ -25,7 +25,9 @@ scjs_harmonise_variable(
 
 \item{variable_map}{Name of the relevant variable map for the data set type}
 
-\item{keep_all_vars}{Indicate whether to keep any harmonised question as data values or as labelled values.}
+\item{keep_all_vars}{TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names}
+
+\item{keep_columns_as}{Indicate whether to keep any harmonised question as data values or as labelled values.}
 }
 \description{
 Harmonises variables from individual SCJS datasets into a target single multi-year dataset.

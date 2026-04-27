@@ -9,7 +9,7 @@
 #' @param names_from Indicates the method to look for variables in the variable map
 #' @param variable_map Name of the relevant variable map for the data set type
 #' @param keep_all_vars TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names
-#' @param keep_all_vars Indicate whether to keep any harmonised question as data values or as labelled values.
+#' @param keep_columns_as Indicate whether to keep any harmonised question as data values or as labelled values.
 #'
 #' @export
 scjs_harmonise_variable <- function(
@@ -195,7 +195,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
   }
 
   vm_sub_final <- vm_sub_final |>
-    dplyr::select(section_or_module, var_name, var_type, all_of(as.character(years_vec)), requires_recoding)
+    dplyr::select(section_or_module, var_name, var_type, dplyr::all_of(as.character(years_vec)), requires_recoding)
 
   return(vm_sub_final)
 
@@ -245,7 +245,7 @@ get_var_maps <- function(vm, vm_sheet) {
   vm_int <- vm[[names(vm_sheet)]] |>
     dplyr::filter(new_var %in% names(vm_sheet[[1]]),
                   old_var %in% vm_sheet[[1]]) |>
-    dplyr::mutate(across(c(old_val, new_val), ~ as.character(stringr::str_replace(.x, " ", ""))))
+    dplyr::mutate(dplyr::across(c(old_val, new_val), ~ as.character(stringr::str_replace(.x, " ", ""))))
 }
 
 # Takes the subset variable map and processes it to gather actual data recoding
@@ -281,13 +281,13 @@ harmonise_preprocess_df <- function(dataset, vm_slice) {
 
   if (length(old_var_processed) == 1) {
     dataset <- dataset |>
-      dplyr::mutate("{new_var}" := dataset[[old_var]], .after = all_of(old_var_processed))
+      dplyr::mutate("{new_var}" := dataset[[old_var]], .after = dplyr::all_of(old_var_processed))
   } else if (length(old_var_processed) > 1) {
     dataset <- dataset |>
       dplyr::mutate(
         "{new_var}" := do.call(
           paste,
-          c(dplyr::across(all_of(old_var_processed)), sep = ",")
+          c(dplyr::across(dplyr::all_of(old_var_processed)), sep = ",")
         ),
         .after = old_var_processed[length(old_var_processed)]
       )
