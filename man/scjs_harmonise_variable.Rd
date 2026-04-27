@@ -4,12 +4,28 @@
 \alias{scjs_harmonise_variable}
 \title{Harmonise variables from SCJS datasets}
 \usage{
-scjs_harmonise_variable(original_data, vars)
+scjs_harmonise_variable(
+  .data = "create",
+  df_list,
+  var_list,
+  names_from = "original",
+  variable_map = vm_nvf$overview,
+  keep_all_vars = FALSE,
+  keep_columns_as = "labels"
+)
 }
 \arguments{
-\item{original_data}{A list containing the original SCJS datasets to harmonise from}
+\item{.data}{A dataframe to add the harmonised variables to, can be set to "create" to start from scratch}
 
-\item{vars}{A vector of variables to be harmonised and placed into the target data frame}
+\item{df_list}{A list containing the original SCJS datasets to harmonise from}
+
+\item{var_list}{A vector of variables to be harmonised and placed into the target data frame}
+
+\item{names_from}{Indicates the method to look for variables in the variable map}
+
+\item{variable_map}{Name of the relevant variable map for the data set type}
+
+\item{keep_all_vars}{Indicate whether to keep any harmonised question as data values or as labelled values.}
 }
 \description{
 Harmonises variables from individual SCJS datasets into a target single multi-year dataset.
