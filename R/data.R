@@ -33,16 +33,27 @@
 "ukds_lookup"
 
 
-#' SCJS NVF Variable Map Overview
+#' SCJS NVF Variable Map
 #'
-#' An overview of how variables have changed over time in SCJS data.
+#' A data frame list containing the variable map for the SCJS non-victim form.
+#' Each element contains a data frame. The first is the overview which describes
+#' which variables from individual years are used to produce the harmonised variables.
+#' The others describe exactly how the data recoding is done in each specific instance.
 #'
 #'
 #' @format ## `vm_nvf`
-#' A data frame with 463 rows and 21 columns:
+#' A list containing data frames:
 #' \describe{
-#'   \item{section_or_module}{Name of the section where the sheet containing the exact recoding is given}
-#'   \item{var_name}{Name of the variable as it appears in the original SG SCJS data pipeline code}
+#'   \item{overview}{Overview of what variables from individual years make up harmonised variables}
+#'   \item{demographics}{Personal characteristics of respondent e.g. sex, disability, religion etc.}
+#'   \item{socio_economic}{Characteristics of respondent or respondent's household e.g. deprivation, household income etc.}
+#'   \item{geography}{Information about respondent's location e.g. local authority, urban/rural etc.}
+#'   \item{victimisation}{Summary variables of respondent's victim status for each crime type - includes incident count}
+#'   \item{cjs_confidence}{Responses to questions around confidence in the criminal justice system}
+#'   \item{police_confidence}{Responses to questions on the topic of policing e.g. confidence in police, police visibility, police contact}
+#'   \item{crime_and_safety}{Attitudinal questions on changes in crime rate, feelings of safety etc.}
+#'   \item{copfs}{Responses to questions relating to the Crown Office and Procurator Fiscal Service - COPFS}
+#'   \item{other}{Currently unused - Questions not falling under any other category}
 #'   ...
 #' }
 "vm_nvf"
