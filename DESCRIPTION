@@ -1,7 +1,7 @@
 Package: scjs
 Title: Import, Harmonise and Analyse Scottish Crime and Justice Survey
     Data
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person("Scottish Government", , , "statistics.enquiries@gov.scot", role = c("cph", "fnd")),
     person("Scottish Crime and Justice Survey Team", , , "scjs@gov.scot", role = "aut"),
