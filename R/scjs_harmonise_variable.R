@@ -3,39 +3,53 @@
 #' @description
 #' Harmonises variables from individual SCJS datasets into a target single multi-year dataset.
 #'
-#' @param .data A dataframe to add the harmonised variables to, can be set to "create" to start from scratch
+#' @param data A dataframe to add the harmonised variables to, can be set to "create" to start from scratch
 #' @param df_list A list containing the original SCJS datasets to harmonise from
 #' @param var_list A vector of variables to be harmonised and placed into the target data frame
 #' @param names_from Indicates the method to look for variables in the variable map
 #' @param variable_map Name of the relevant variable map for the data set type
-#' @param keep_all_vars TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names
-#' @param keep_columns_as Indicate whether to keep any harmonised question as data values or as labelled values.
+#' @param find_all_vars TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names
+#' @param harmonise_as Indicate whether to keep any harmonised question as data values or as labelled values
+#' @param join_method "join" or "append" - Whether to join datasets together: for adding more variables; or append the data: for adding a new year of data
+#' @param drop_original_cols TRUE/FALSE indicating whether to drop original columns after harmonisation
 #'
 #' @export
 scjs_harmonise_variable <- function(
-    .data="create",
+    data="create",
     df_list,
     var_list,
     names_from="original",
     variable_map=vm_nvf$overview,
-    keep_all_vars=FALSE,
-    keep_columns_as="labels"
+    find_all_vars=FALSE,
+    harmonise_as="labels",
+    join_method = "join",
+    drop_original_cols=FALSE
 ) {
 
-  if (missing(.data)) {
+  if (missing(data)) {
     stop("`data` must be supplied, either directly or via a pipe.", call. = FALSE)
   }
 
-  if(all(.data == "create")) {
-    .data <- data.frame()
+  if(identical(data, "create")) {
+    data <- data.frame()
   }
 
-  if(!is.data.frame(.data)) {
-    stop(".data must be a data frame.")
+  if(!is.data.frame(data)) {
+    stop("data must be a data frame.")
   }
 
-  # Check that original data is a list
-  if(!is.list(df_list)) stop("The original data supplied must be a list.")
+  if (!(join_method %in% c("join", "append"))) {
+    stop("Argument 'join_method' must be one of 'join' or 'append'.")
+  }
+
+  # Check that original data is in the right format
+  if(is.data.frame(df_list)) {
+    df_list <- list(df_list) # when a single dataframe is passed
+  } else if (is.list(df_list) && all(vapply(df_list, is.data.frame, logical(1)))) {
+    # is list of data frames
+  } else {
+    stop("The original data supplied must be a list of data frames or a single data frame.")
+  }
 
   # Check that var_list is a character
   if(!is.character(var_list)) stop("The list of variables to harmonise must be a character or vector of characters.")
@@ -46,8 +60,8 @@ scjs_harmonise_variable <- function(
     stop(paste("argument 'names_from' must be one of:", valid_names_from))
   }
 
-  # check keep_all_vars validity
-  if(!is.logical(keep_all_vars)) {
+  # check find_all_vars validity
+  if(!is.logical(find_all_vars)) {
     stop("Argument keep all vars must be TRUE or FALSE.")
   }
 
@@ -58,12 +72,53 @@ scjs_harmonise_variable <- function(
   print(paste("latest_year:", latest_year))
 
   # subset the variable map to the relevant parts
-  vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, keep_all_vars)
+  vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, find_all_vars)
   # unique_var_list <- dplyr::pull(vm_sub, var="var_name")
 
   # perform the transformations for harmonisation
+  df_harmonised <- df_list |>
+    purrr::map(
+      ~ process_harmonise_df(.x, vm_sub, harmonise_as = harmonise_as)
+    ) |>
+    data.table::rbindlist(use.names = TRUE, fill = TRUE, ignore.attr = TRUE)
 
-  df <- purrr::map_df(df_list, ~ process_harmonise_df(.x, vm_sub, keep_columns_as = keep_columns_as))
+  # join the new harmonised dataset to the original data set
+
+  if (all(dim(data)) == 0) {
+    data <- df_harmonised
+  } else if (join_method == "join") {
+    data <- do_dt_join(data, df_harmonised)
+  } else if (join_method == "append") {
+
+    # check for overlap in years - raise error if overlap
+    starting_data_years <- data |>
+      dplyr::pull(var = "year") |>
+      unique()
+    years_intersect <- intersect(starting_data_years, years_vec)
+    if(length(years_intersect > 0)) {
+      stop(
+        paste(
+          "Overlap in years detected when trying to append data. Append should only be used when adding a new year to an existing dataset.",
+          "Overlapping years:",
+          years_intersect
+        )
+      )
+    }
+    data <- data.table::rbindlist(list(data, df_harmonised), use.names = TRUE, fill = TRUE, ignore.attr = TRUE)
+  }
+
+  # drop original variables
+  if (drop_original_cols == TRUE) {
+    # find which columns to drop
+    if (names_from == "original") {
+      cols_to_drop <- var_list
+    } else if (names_from == "pipeline") {
+      cols_to_drop <- get_all_original_vars(vm_sub)
+    }
+    data <- data |> dplyr::select(-dplyr::all_of(unlist(cols_to_drop)))
+  }
+
+  return(data)
 
   # print(vm_sub)
   # print(unique_var_list)
@@ -109,7 +164,7 @@ convert_financial_year <- function(year) {
 
 
 
-subset_variable_map <- function(variable_map, var_list, years_vec, names_from, keep_all_vars) {
+subset_variable_map <- function(variable_map, var_list, years_vec, names_from, find_all_vars) {
 
   if(!is.numeric(years_vec)) {
     stop("The extracted years is not a numeric vector.")
@@ -138,7 +193,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
       dplyr::select(dplyr::all_of(as.character(latest_year))) |>
       dplyr::pull()
 
-    if(keep_all_vars == FALSE) {
+    if(find_all_vars == FALSE) {
       vm_grp <- vm_grp |>
         dplyr::filter(dplyr::row_number() == 1)
 
@@ -146,7 +201,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
       vm_dup_pipeline_vars <-  vm_grp |> dplyr::select(var_name) |> dplyr::pull()
       warning(paste(
         "Found multiple results for some original variables, scjs_harmonise_variable() will only take the first result by default.",
-        "To keep all matches to the original variable name, use keep_all_vars=TRUE in scjs_harmonise_variable().",
+        "To keep all matches to the original variable name, use find_all_vars=TRUE in scjs_harmonise_variable().",
         "\n",
         "The duplicated variables are:",
         paste(vm_dup_vars, collapse = ", "),
@@ -156,7 +211,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
       ))
 
       vm_sub_final <- vm_grp
-    } else if (keep_all_vars == TRUE & max(vm_grp$count) > 1) {
+    } else if (find_all_vars == TRUE & max(vm_grp$count) > 1) {
       vm_pairs_multi <- vm_grp_multi |>
         dplyr::ungroup() |>
         dplyr::select(var_name, dplyr::all_of(as.character(latest_year)))
@@ -203,7 +258,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, k
 }
 
 # Functions to process the variable map / dataset and perform the harmonisation based on the input variable map
-process_harmonise_df <- function(dataset, variable_map, keep_columns_as="labels") {
+process_harmonise_df <- function(dataset, variable_map, harmonise_as="labels") {
 
   # grab the year of the dataset
   year <- dplyr::pull(dataset, var = year)[1]
@@ -213,15 +268,17 @@ process_harmonise_df <- function(dataset, variable_map, keep_columns_as="labels"
   vm_split <- split(vm_combined, vm_combined[["new_var"]]) # split the combined vm into a list of dfs
 
   # create the list structure for the combined variable map
-  if (!(keep_columns_as %in% c("data", "labels"))) {
-    stop("Argument keep_columns_as must be equal to one of: 'data' or 'labels'.")
+  if (!(harmonise_as %in% c("data", "labels", "none"))) {
+    stop("Argument harmonise_as must be equal to one of: 'data' or 'labels'.")
   }
 
-  # control inputs to vm_split_to_lists() based on value in 'keep_columns_as'
-  if (keep_columns_as == "labels") {
+  # control inputs to vm_split_to_lists() based on value in 'harmonise_as'
+  if (harmonise_as == "labels") {
     vm_processed_list <- vm_split_to_lists(vm_combined, old_col = "old_val", new_col = "new_lab")
-  } else if (keep_columns_as == "data") {
+  } else if (harmonise_as == "data") {
     vm_processed_list <- vm_split_to_lists(vm_combined, old_col = "old_val", new_col = "new_val")
+  } else if (harmonise_as == "none") {
+    return(dataset)
   }
 
 
@@ -246,6 +303,23 @@ get_var_maps <- function(vm, vm_sheet) {
     dplyr::filter(new_var %in% names(vm_sheet[[1]]),
                   old_var %in% vm_sheet[[1]]) |>
     dplyr::mutate(dplyr::across(c(old_val, new_val), ~ as.character(stringr::str_replace(.x, " ", ""))))
+}
+
+get_all_original_vars <- function(vm) {
+  unique_original_vars <- vm |>
+    dplyr::select(dplyr::all_of(dplyr::starts_with("2"))) |>
+    unlist() |>
+    unique()
+
+  split_combo_vars <- function(var) {
+    var_processed <- dplyr::case_when(stringr::str_detect(var, " and ") ~ stringr::str_split_1(var, " and | or "),
+                                                       stringr::str_detect(var, " or ") ~ stringr::str_split_1(var, " and | or "),
+                                                       TRUE ~ var)
+  }
+
+  unique_original_vars_processed <- purrr::map(unique_original_vars, ~ split_combo_vars(.x))
+
+  return(unique_original_vars_processed)
 }
 
 # Takes the subset variable map and processes it to gather actual data recoding
@@ -307,5 +381,38 @@ harmonise_replace_values <- function(dataset, vm_processed_list_slice, var) {
     vm_processed_list_slice[[var]][as.character(dataset[[var]])] # look at the thing in the column of interest, find the thing with that name in lookup list, and return the value of the thing with that name
   )
 
+  return(dataset)
+}
+
+
+do_dt_join <- function(lhs, rhs, join_keys = c("year", "serial2")) {
+  lhs <- data.table::as.data.table(lhs)
+  rhs <- data.table::as.data.table(rhs)
+
+  different_cols <- setdiff(names(rhs), names(lhs))
+  diff_col_locs <- purrr::map(different_cols, ~ which(names(rhs) == .x))
+  names(diff_col_locs) <- different_cols
+  different_cols_rev <- rev(diff_col_locs)
+
+  cols_to_keep <- c(join_keys, different_cols)
+  rhs_join <- rhs[, cols_to_keep, with = FALSE]
+
+  df_join <- merge(
+    lhs,
+    rhs_join,
+    by = join_keys,
+    all.x = TRUE,
+    sort = FALSE
+  )
+
+  # repair column order (need to reverse list to avoid altering index during runtime)
+  dataset_reordered <- purrr::reduce2(different_cols_rev, names(different_cols_rev), repair_column_order, .init = df_join)
+
+  return(dataset_reordered)
+}
+
+repair_column_order <- function(dataset, relocate_list, relocate_names) {
+  dataset <- dataset |>
+    dplyr::relocate(relocate_names, .before = relocate_list)
   return(dataset)
 }
