@@ -5,17 +5,19 @@
 \title{Harmonise variables from SCJS datasets}
 \usage{
 scjs_harmonise_variable(
-  .data = "create",
+  data = "create",
   df_list,
   var_list,
   names_from = "original",
   variable_map = vm_nvf$overview,
-  keep_all_vars = FALSE,
-  keep_columns_as = "labels"
+  find_all_vars = FALSE,
+  harmonise_as = "labels",
+  join_method = "join",
+  drop_original_cols = FALSE
 )
 }
 \arguments{
-\item{.data}{A dataframe to add the harmonised variables to, can be set to "create" to start from scratch}
+\item{data}{A dataframe to add the harmonised variables to, can be set to "create" to start from scratch}
 
 \item{df_list}{A list containing the original SCJS datasets to harmonise from}
 
@@ -25,9 +27,13 @@ scjs_harmonise_variable(
 
 \item{variable_map}{Name of the relevant variable map for the data set type}
 
-\item{keep_all_vars}{TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names}
+\item{find_all_vars}{TRUE/FALSE indicating whether to keep instances where multiple matches are found when using original data names}
 
-\item{keep_columns_as}{Indicate whether to keep any harmonised question as data values or as labelled values.}
+\item{harmonise_as}{Indicate whether to keep any harmonised question as data values or as labelled values}
+
+\item{join_method}{"join" or "append" - Whether to join datasets together: for adding more variables; or append the data: for adding a new year of data}
+
+\item{drop_original_cols}{TRUE/FALSE indicating whether to drop original columns after harmonisation}
 }
 \description{
 Harmonises variables from individual SCJS datasets into a target single multi-year dataset.

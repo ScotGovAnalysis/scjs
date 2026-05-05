@@ -7,7 +7,7 @@
 \format{
 \subsection{\code{vm_nvf}}{
 
-A data frame with 463 rows and 21 columns:
+A list containing data frames:
 \describe{
 \item{overview}{Overview of what variables from individual years make up harmonised variables}
 \item{demographics}{Personal characteristics of respondent e.g. sex, disability, religion etc.}

@@ -26,6 +26,7 @@ Imports:
     dplyr,
     haven,
     purrr,
-    rlang
+    rlang,
+    tidyr
 Depends: 
     R (>= 3.5)

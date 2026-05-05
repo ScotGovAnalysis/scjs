@@ -2,4 +2,5 @@
 
 export(scjs_harmonise_variable)
 export(scjs_load_ukds)
+export(scjs_table)
 importFrom(rlang,":=")

@@ -67,13 +67,31 @@ scjs_harmonise_variable <- function(
 
   # find our what the years are in the data list
   years_vec <- extract_year_var(df_list)
-  print(years_vec)
+  # print(years_vec)
   latest_year <- max(years_vec)
   print(paste("latest_year:", latest_year))
 
   # subset the variable map to the relevant parts
   vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, find_all_vars)
   # unique_var_list <- dplyr::pull(vm_sub, var="var_name")
+
+  # pre-harmonisation check - make sure all necessary variables are in data
+  # first get the variable map in list format with just the original variables for each year
+  vm_sub_pre <- vm_sub |>
+    dplyr::select(dplyr::starts_with("2"), var_name) |>
+    tidyr::separate_wider_delim(cols = dplyr::starts_with("2"), delim = stringr::regex("( and )|( or )"), names_sep = c("sep"), too_few = "align_start") |>
+    tidyr::pivot_longer(names_to = "year", values_to = c("original_var"), cols = dplyr::starts_with("2")) |>
+    dplyr::filter(!is.na(original_var)) |>
+    dplyr::mutate(year = substr(year, 1, 4))
+  vm_sub_list <- split(vm_sub_pre, vm_sub_pre$year)
+  missing_variables <- purrr::map(df_list, ~ pre_harmonisation_check(.x, vm_sub_list)) |>
+    purrr::list_rbind()
+  if (nrow(missing_variables) > 0) {
+    missing_variables <- missing_variables |> dplyr::relocate(year, .before = 0)
+    stop(paste(c("Some original variables missing from requested harmonisation - unable to proceed. The missing variables are:",
+                 capture.output(print(missing_variables))), collapse = "\n"))
+  }
+  # print(missing_variables)
 
   # perform the transformations for harmonisation
   df_harmonised <- df_list |>
@@ -143,7 +161,7 @@ extract_year_var <- function(df) {
   return(year)
 }
 
-# function to coerce financial year to numeric?
+# function to coerce financial year to numeric
 convert_financial_year <- function(year) {
   # regex for financial year
   finyr_regex <- stringr::str_detect(year, "\\b\\d{2,4}/?\\d{2}\\b")
@@ -163,8 +181,16 @@ convert_financial_year <- function(year) {
 }
 
 
-
+# reduces the overview sheet of a variable map to just the rows being harmonised and just the years passed in as data
 subset_variable_map <- function(variable_map, var_list, years_vec, names_from, find_all_vars) {
+
+  if (!is.data.frame(variable_map)) {
+    stop("Supplied variable map must be a data frame.")
+  }
+
+  if ((!is.vector(var_list) || length(var_list) == 0) || all(var_list == "")) {
+    stop("Invalid var_list supplied, must be a vector or string containing variable names.")
+  }
 
   if(!is.numeric(years_vec)) {
     stop("The extracted years is not a numeric vector.")
@@ -246,7 +272,7 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, f
   # Check result list against supplied var_list
   vars_not_found <- setdiff(var_list, vm_check_list)
   if(length(vars_not_found) != 0) {
-    warning(paste("Unable to match all variables requested.", "\n", "Could not find:", paste(vars_not_found, collapse=", ")))
+    warning(paste("Unable to match all variables requested for harmonisation.", "\n", "Could not find:", paste(vars_not_found, collapse=", ")))
   }
 
   vm_sub_final <- vm_sub_final |>
@@ -255,6 +281,19 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, f
   return(vm_sub_final)
 
   # input list of dataframes, input subset of variable map
+}
+
+pre_harmonisation_check <- function(dataset, vm_sub_list) {
+  cur_year <- dplyr::pull(dataset, var = year)[1]
+  cur_list <- vm_sub_list[[as.character(cur_year)]]
+  missing_vars <- setdiff(cur_list$original_var, names(dataset))
+  if(length(missing_vars) == 0) {
+    return(NULL)
+  }
+  data_missing <- cur_list |>
+    dplyr::filter(original_var %in% missing_vars)
+  return(data_missing)
+
 }
 
 # Functions to process the variable map / dataset and perform the harmonisation based on the input variable map

@@ -17,5 +17,5 @@ scjs_data <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), years_to_load =
 
 list2env(scjs_data, envir=.GlobalEnv)
 
-"year" %in% names(scjs_data[[1]])
-"year" %in% names(scjs_data[[2]])
+# "year" %in% names(scjs_data[[1]])
+# "year" %in% names(scjs_data[[2]])
