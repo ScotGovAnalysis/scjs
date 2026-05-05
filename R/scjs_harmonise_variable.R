@@ -304,7 +304,22 @@ process_harmonise_df <- function(dataset, variable_map, harmonise_as="labels") {
 
   # process the variable maps
   vm_combined <- vm_combine_sheets(variable_map, year) # combine relevant sections from individual sheets
+
+  # need to handle cases where no recoding is required but still need them to go into a single united column in harmonised df
+  variable_map_no_recoding <- variable_map |>
+    dplyr::filter(requires_recoding == "no") |>
+    dplyr::select(var_name, dplyr::starts_with("2"))
+  variable_map_no_recoding <- variable_map_no_recoding |>
+    tidyr::pivot_longer(names_to = "year", values_to = "old_var", cols = -var_name) |>
+    dplyr::rename(new_var = var_name) |>
+    dplyr::select(-year)
+
+  vm_combined <- vm_combined |>
+    dplyr::bind_rows(variable_map_no_recoding)
+
   vm_split <- split(vm_combined, vm_combined[["new_var"]]) # split the combined vm into a list of dfs
+
+
 
   # create the list structure for the combined variable map
   if (!(harmonise_as %in% c("data", "labels", "none"))) {
@@ -411,6 +426,10 @@ harmonise_preprocess_df <- function(dataset, vm_slice) {
 
 harmonise_replace_values <- function(dataset, vm_processed_list_slice, var) {
 
+  # exit early if no recoding is being done (given by the vm_processed_list_slice being NA)
+  if(all(is.na(vm_processed_list_slice))) {
+    return(dataset)
+  }
 
   # reconstruct the list - necessary as the 'metadata' doesn't get passed when calling purrr::reduce()
   vm_processed_list_slice <- list(vm_processed_list_slice)
