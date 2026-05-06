@@ -9,8 +9,11 @@ utils::globalVariables(c("ukds_lookup"))
 # get_var_maps()
 utils::globalVariables(c("new_var", "new_val", "old_var", "old_val"))
 
+# pre_harmonisation_check()
+utils::globalVariables(c("original_var"))
+
 # scjs_harmonise_variable()
-utils::globalVariables(c("vm_nvf"))
+utils::globalVariables(c("original_var", "vm_nvf"))
 
 # scjs_load_ukds()
 utils::globalVariables(c("year"))

@@ -89,7 +89,7 @@ scjs_harmonise_variable <- function(
   if (nrow(missing_variables) > 0) {
     missing_variables <- missing_variables |> dplyr::relocate(year, .before = 0)
     stop(paste(c("Some original variables missing from requested harmonisation - unable to proceed. The missing variables are:",
-                 capture.output(print(missing_variables))), collapse = "\n"))
+                 utils::capture.output(print(missing_variables))), collapse = "\n"))
   }
   # print(missing_variables)
 
