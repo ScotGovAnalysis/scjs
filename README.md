@@ -10,6 +10,16 @@ A package providing functions to import, harmonise and analyse data from
 the Scottish Crime and Justice Survey (SCJS). Integrates with data
 available from the UK Data Service (UKDS).
 
+## Installation
+
+You can install the development version of scjs from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("pak")
+pak::pak("ScotGovAnalysis/scjs")
+```
+
 ## License
 
 Unless stated otherwise, the codebase is released under [the MIT
