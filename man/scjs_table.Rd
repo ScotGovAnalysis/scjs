@@ -6,6 +6,13 @@
 \usage{
 scjs_table()
 }
+\arguments{
+\item{dataset}{Input dataset to construct the table from}
+
+\item{table_type}{Specify what format the output table should take (time series / subgroup comparison etc.)}
+
+\item{var}{Single variable or vector specifying multiple variables to be presented in the resulting table}
+}
 \description{
 Takes an individual or harmonised set of SCJS data and builds a table using standard methods.
 }
