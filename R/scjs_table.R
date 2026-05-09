@@ -173,3 +173,122 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
 
 
 # Statistical significance functions ####
+#' @importFrom janitor round_half_up
+significance_nstep <- function(proportion, ci, lag=1, rounding_method="table", format="prop") {
+
+  not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
+  rounding <- if (rounding_method == "table") {
+    if (sum(c(proportion, lag(proportion, n = lag) < 10), na.rm = TRUE) == 2) 1 else 0
+  } else 2
+
+  lag_prop <- dplyr::lag(proportion, n = lag)
+  lag_ci <- dplyr::lag(ci, n = lag)
+
+  diff <- proportion - lag_prop
+  threshold <- sqrt(ci^2 + lag_ci^2)
+
+  significant <- abs(diff) > threshold
+
+  if (format == "prop") {
+    change_value <- abs(diff)
+    change_symbol <- "pp"
+  } else {
+    pct_change <- dplyr::if_else(
+      lag_prop == 0 | is.na(lag_prop),
+      NA_real_,
+      (diff / lag_prop) * 100
+    )
+    change_symbol <- "%"
+    change_value <- abs(pct_change)
+  }
+
+  dplyr::case_when(
+    is.na(lag_prop) ~ NA_character_,
+    significant & diff > 0 ~ paste0("up by ", janitor::round_half_up(change_value, rounding), change_symbol),
+    significant & diff < 0 ~ paste0("down by ", janitor::round_half_up(change_value, rounding), change_symbol),
+    TRUE ~ not_significant_symbol
+  )
+}
+
+#' @importFrom janitor round_half_up
+significance_fromstart <- function(proportion, ci, rounding_method = "table", format = "prop") {
+
+  # --- formatting options ---
+  not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
+
+  rounding <- if (rounding_method == "table") {
+    if (sum(c(proportion, lag(proportion, n = lag) < 10), na.rm = TRUE) == 2) 1 else 0
+  } else 2
+
+  # --- find first non-NA baseline ---
+  first_idx <- which(!is.na(proportion))[1]
+
+  # if no valid baseline or only 1 value, return all NA
+  if (is.na(first_idx)) {
+    return(rep(NA_character_, length(proportion)))
+  }
+  if (first_idx == length(proportion)) {
+    return(c(rep(NA_character_, length(proportion) - 1), "[z]")) # return string with [z] for not applicable at end
+  }
+  # could handle cases where there are only 2 observations? as this comparison is covered by the onestep back function
+
+  base_prop <- proportion[first_idx]
+  base_ci   <- ci[first_idx]
+
+  diff <- proportion - base_prop
+  threshold <- sqrt(ci^2 + base_ci^2)
+
+  significant <- abs(diff) > threshold
+
+  if (format == "prop") {
+    change_value <- abs(diff)
+    change_symbol <- "pp"
+  } else {
+    pct_change <- dplyr::if_else(
+      base_prop == 0 | is.na(base_prop),
+      NA_real_,
+      (diff / base_prop) * 100
+    )
+    change_value <- abs(pct_change)
+    change_symbol <- "%"
+  }
+
+  dplyr::case_when(
+    is.na(proportion) ~ NA_character_,
+    seq_along(proportion) == first_idx ~ NA_character_,
+    significant & diff > 0 ~ paste0("up by ", janitor::round_half_up(change_value, rounding), change_symbol),
+    significant & diff < 0 ~ paste0("down by ", janitor::round_half_up(change_value, rounding), change_symbol),
+    TRUE ~ not_significant_symbol
+  )
+}
+
+
+significance_mostrecent <- function(proportion, ci, time_variable) {
+
+  n <- length(proportion)
+  result <- rep(NA, n)
+
+  for (i in rev(seq_along(proportion))) {
+
+    # skip first element
+    if (i == 1) next
+
+    # skip invalid current values
+    if (is.na(proportion[i]) || is.na(ci[i]) || proportion[i] > 100) next
+
+    # look backwards
+    for (j in (i - 1):1) {
+
+      # skip invalid comparison values
+      if (is.na(proportion[j]) || is.na(ci[j])) next
+
+      # significance test
+      if (abs(proportion[i] - proportion[j]) > sqrt(ci[i]^2 + ci[j]^2)) {
+        result[i] <- time_variable[j]
+        break
+      }
+    }
+  }
+
+  return(result)
+}
