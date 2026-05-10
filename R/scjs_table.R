@@ -10,6 +10,8 @@
 #' @param time_period Used to restrict the years analysed in the table
 #' @param time_grouping Used to specify how years can be grouped together for pooled analysis - default is just survey year. Argument needs to be name of existing column in dataset.
 #' @param result_type Used to specify whether data in the table is presented as a proportion or a volume.
+#' @param rounding_method Specifies how change in significance columns are presented, default value 'table' will round to 0dp when numbers are >10 and 1dp when below 10 - change value to round to 2dp.
+#' @param ts_significance_steps_back For time series tables, specifies how many time periods back to produce a significance column for, e.g. by default gives a result compared to 1 and 2 years prior.
 #' @param weighting_var Weight value to use in calculations - default is the harmonised individual weight from the non-victim form. Needs to be existing column in dataset.
 #'
 #' @export
@@ -22,6 +24,8 @@ scjs_table <- function(
     time_period=NULL,
     time_grouping="year",
     result_type="proportion",
+    rounding_method="table",
+    ts_significance_steps_back=2,
     weighting_var="weight_indiv"
 ) {
 
@@ -47,7 +51,7 @@ scjs_table <- function(
   }
 
 
-  table_base <- purrr::map2(
+  table_base_summary <- purrr::map2(
     var_crossbreak_combinations$var,
     var_crossbreak_combinations$crossbreak,
     ~ base_summary_table(
@@ -60,9 +64,22 @@ scjs_table <- function(
   ) |>
     purrr::list_rbind()
 
+  # add the requisite significance columns for that table type
+  table_base_sig <- add_significance_cols(
+    dataset = table_base_summary,
+    table_type = table_type,
+    var = var,
+    crossbreak = crossbreak,
+    time_grouping = time_grouping,
+    result_type = result_type,
+    rounding_method = rounding_method,
+    ts_significance_steps_back = ts_significance_steps_back
+  )
 
 
-  return(table_base)
+
+
+  return(table_base_sig)
 }
 
 # Helper functions ####
@@ -108,6 +125,8 @@ validate_table_inputs <- function(
     missing_vars <- setdiff(c(var, crossbreak, time_grouping), names(dataset))
     stop(paste("Source dataset has some missing variables - unable to proceed. Missing vars are:", paste(missing_vars, collapse = ", ")))
   }
+
+  # should add check that time grouping is either year or is a factor (so that ordering can be set correctly) - raise warning if so
 }
 
 reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_grouping, weighting_var) {
@@ -124,7 +143,7 @@ reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_gro
 
 }
 
-# Table functions ####
+## Table functions ####
 base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_type, weighting_var) {
 
   dataset_strip <- dataset |>
@@ -170,6 +189,57 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
 
 }
 
+add_significance_cols <- function(dataset, table_type, var, crossbreak, time_grouping, result_type=result_type, rounding_method="table",ts_significance_steps_back) {
+
+  #TODO configure way to input custom significance requests - e.g. none or for time series only steps back
+
+  # establish what the 'format' value should be for changes shown in significance cols
+  if (result_type == "proportion") {
+    format <- "prop"
+  } else {
+    format <- "volume"
+  }
+
+  if (result_type == "volume") {
+    # current implementation does not allow volume significance tests, but if added it would be handled here
+    return(dataset)
+  }
+
+  if (table_type == "time series") {
+
+    steps_back <- 1:ts_significance_steps_back
+
+    # group the dataset
+    # grouping_cols <- c(variable_name, crossbreak, subgroup, response)
+    dataset <- dataset |>
+      dplyr::group_by(variable_name, crossbreak, subgroup, response)
+
+    data_sig <- purrr::reduce(
+      steps_back,
+      ~ significance_nstep_wrapper(.x, .y, rounding_method = rounding_method, format = format),
+      .init = dataset
+    )
+
+    data_sig <- data_sig |>
+      dplyr::mutate(sig_fromstart = significance_fromstart(proportion, ci_95)) |>
+      dplyr::mutate(sig_mostrecent = significance_mostrecent(proportion, ci_95, .data[["year"]])) |>
+      dplyr::ungroup()
+
+    return(data_sig)
+  }
+
+  if (table_type == "subgroup") {
+    dataset <- dataset |>
+      dplyr::group_by(dplyr::across(dplyr::any_of(c(time_grouping))), variable_name, crossbreak, response)
+
+    data_sig <- dataset |>
+      dplyr::mutate(sig_allcombo = significance_allcombo(proportion, ci_95, context_var=subgroup)) |>
+      dplyr::ungroup()
+
+    return(data_sig)
+  }
+
+}
 
 
 # Statistical significance functions ####
@@ -178,7 +248,7 @@ significance_nstep <- function(proportion, ci, lag=1, rounding_method="table", f
 
   not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
   rounding <- if (rounding_method == "table") {
-    if (sum(c(proportion, lag(proportion, n = lag) < 10), na.rm = TRUE) == 2) 1 else 0
+    if (sum(proportion > 10, na.rm = TRUE) >= 2) 1 else 0
   } else 2
 
   lag_prop <- dplyr::lag(proportion, n = lag)
@@ -203,11 +273,18 @@ significance_nstep <- function(proportion, ci, lag=1, rounding_method="table", f
   }
 
   dplyr::case_when(
+    seq_along(proportion) <= lag ~ "[z]",
     is.na(lag_prop) ~ NA_character_,
     significant & diff > 0 ~ paste0("up by ", janitor::round_half_up(change_value, rounding), change_symbol),
     significant & diff < 0 ~ paste0("down by ", janitor::round_half_up(change_value, rounding), change_symbol),
     TRUE ~ not_significant_symbol
   )
+}
+
+significance_nstep_wrapper <- function(dataset, steps_back, rounding_method="table", format="prop") {
+  col_name <- paste0("significance_", steps_back, "_step", if(steps_back > 1) "s")
+  dataset <- dataset |>
+    dplyr::mutate("{col_name}" := significance_nstep(proportion, ci_95, lag = steps_back, rounding_method=rounding_method, format=format))
 }
 
 #' @importFrom janitor round_half_up
@@ -217,7 +294,7 @@ significance_fromstart <- function(proportion, ci, rounding_method = "table", fo
   not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
 
   rounding <- if (rounding_method == "table") {
-    if (sum(c(proportion, lag(proportion, n = lag) < 10), na.rm = TRUE) == 2) 1 else 0
+    if (sum(proportion > 10, na.rm = TRUE) >= 2) 1 else 0
   } else 2
 
   # --- find first non-NA baseline ---
@@ -291,4 +368,48 @@ significance_mostrecent <- function(proportion, ci, time_variable) {
   }
 
   return(result)
+}
+
+significance_allcombo <- function(proportion, ci, context_var, matrix_result = FALSE) {
+
+  # define expected output
+  full_results <- rep(NA, length(proportion))
+
+  # set up format of output based on specification
+  if (matrix_result) {
+    invalid_res <- "."
+    positive_res <- rep("yes", length(proportion))
+    negative_res <- "no"
+  } else {
+    invalid_res <- NA
+    positive_res <- context_var
+    negative_res <- NA
+  }
+
+  for (i in 1:length(proportion)) {
+    indiv_result_list <- rep(NA, length(proportion))
+    for (j in 1:length(proportion)) {
+      if (i == j){
+        # indiv_result_list <- append(indiv_result_list, invalid_res)
+        indiv_result_list[j] <- invalid_res
+      } else {
+        if (abs(proportion[i] - proportion[j]) > sqrt(ci[i]^2 + ci[j]^2)) {
+          # indiv_result_list <- append(indiv_result_list, positive_res[j])
+          indiv_result_list[j] <- positive_res[j]
+          # steps <- append(steps, outcome_var[j])
+          # steps <- steps[!is.na(steps)]
+        } else {
+          indiv_result_list[j] <- negative_res
+        }
+      }
+      if (matrix_result) {
+        full_results[i] <- paste(indiv_result_list, collapse = ", ")
+      } else {
+        strip_results <- indiv_result_list[which(!(indiv_result_list %in% c(invalid_res, negative_res)))]
+        full_results[i] <- paste(strip_results, collapse = ", ")
+      }
+
+    }
+  }
+  return(full_results)
 }
