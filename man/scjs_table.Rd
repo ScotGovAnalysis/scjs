@@ -4,7 +4,18 @@
 \alias{scjs_table}
 \title{Create a table from SCJS data}
 \usage{
-scjs_table()
+scjs_table(
+  dataset,
+  table_type,
+  var,
+  crossbreak = NULL,
+  time_period = NULL,
+  time_grouping = "year",
+  result_type = "proportion",
+  rounding_method = "table",
+  ts_significance_steps_back = 2,
+  weighting_var = "weight_indiv"
+)
 }
 \arguments{
 \item{dataset}{Input dataset to construct the table from}
@@ -12,6 +23,20 @@ scjs_table()
 \item{table_type}{Specify what format the output table should take (time series / subgroup comparison etc.)}
 
 \item{var}{Single variable or vector specifying multiple variables to be presented in the resulting table}
+
+\item{crossbreak}{Single variable or vector specifying multiple variables to act as cross breaks - usually a demographic variable, can be "total" for all respondents. NOTE: for intersectional split, crossbreak MUST be a list() with the desired intersection combination grouped by c() or list()}
+
+\item{time_period}{Used to restrict the years analysed in the table}
+
+\item{time_grouping}{Used to specify how years can be grouped together for pooled analysis - default is just survey year. Argument needs to be name of existing column in dataset.}
+
+\item{result_type}{Used to specify whether data in the table is presented as a proportion or a volume.}
+
+\item{rounding_method}{Specifies how change in significance columns are presented, default value 'table' will round to 0dp when numbers are >10 and 1dp when below 10 - change value to round to 2dp.}
+
+\item{ts_significance_steps_back}{For time series tables, specifies how many time periods back to produce a significance column for, e.g. by default gives a result compared to 1 and 2 years prior.}
+
+\item{weighting_var}{Weight value to use in calculations - default is the harmonised individual weight from the non-victim form. Needs to be existing column in dataset.}
 }
 \description{
 Takes an individual or harmonised set of SCJS data and builds a table using standard methods.

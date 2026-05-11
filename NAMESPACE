@@ -3,4 +3,5 @@
 export(scjs_harmonise_variable)
 export(scjs_load_ukds)
 export(scjs_table)
+importFrom(janitor,round_half_up)
 importFrom(rlang,":=")
