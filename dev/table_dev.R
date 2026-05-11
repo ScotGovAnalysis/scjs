@@ -88,3 +88,11 @@ significance_allcombo <- function(proportion, ci, context_var, matrix_result = F
   }
   return(full_results)
 }
+
+
+subgroup_2 <- scjs_table(
+  scjs_harmonise,
+  "subgroup",
+  var=c("prev_violent"),
+  crossbreak = "sex"
+)
