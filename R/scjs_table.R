@@ -162,7 +162,7 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
       dplyr::mutate(base_total = sum(base), .after = "base",,
                     proportion = sum_weight / sum(sum_weight) * 100,
                     se = sqrt((proportion) * (100 - (proportion)) / base),
-                    ci_95 = se * qnorm(0.975) * design_factor) |>
+                    ci_95 = se * stats::qnorm(0.975) * design_factor) |>
       dplyr::ungroup()
   }
 
