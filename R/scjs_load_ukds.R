@@ -32,14 +32,6 @@ scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns
   # Read spss .sav files found above
   scjs_data <- purrr::map2(full_file_paths, dplyr::pull(ukds_lookup, var = "year"), ~read_sav_data(filepath=.x, columns=columns, dataset_type=dataset_type, year=.y))
 
-  # Add a variable for year to the loaded datasets
-  scjs_data <- purrr::map2(scjs_data, dplyr::pull(ukds_lookup, var = "year"), ~ add_year_var(.x, .y))
-
-  # Convert column names to lowercase if specified (TRUE by default)
-  if(lowercase_cols) {
-    scjs_data <- purrr::map(scjs_data, ~ dplyr::rename_with(.x, tolower))
-  }
-
   # Name the output datasets and filter for only sucessful results
   if(!is.null(name_prefix)) {
     scjs_data <- purrr::set_names(scjs_data, paste(name_prefix, dplyr::pull(ukds_lookup, var = "year"), sep="_"))
@@ -47,6 +39,21 @@ scjs_load_ukds <- function(path, dataset_type="nvf", years_to_load=NULL, columns
     scjs_data <- purrr::set_names(scjs_data, paste(dataset_type, dplyr::pull(ukds_lookup, var = "year"), sep="_"))
   }
   scjs_data <- scjs_data[!is.na(scjs_data)]
+
+  # filter UKDS lookup to only successfully loaded datasets years
+  loaded_years <- as.numeric(stringr::str_replace(names(scjs_data), paste0(if(is.null(name_prefix)) dataset_type else name_prefix, "_"), ""))
+
+
+  # Add a variable for year to the loaded datasets
+  scjs_data <- purrr::map2(scjs_data, loaded_years, ~ add_year_var(.x, .y))
+  # scjs_data <- purrr::map2(scjs_data, dplyr::pull(ukds_lookup, var = "year"), ~ add_year_var(.x, .y))
+
+  # Convert column names to lowercase if specified (TRUE by default)
+  if(lowercase_cols) {
+    scjs_data <- purrr::map(scjs_data, ~ dplyr::rename_with(.x, tolower))
+  }
+
+
 
   message(paste("Successfully loaded", length(scjs_data), dplyr::if_else(length(scjs_data) > 1, "datasets", "dataset"), "into R inside a list."))
   message("You can unpack the list into individual datasets with 'list2env(scjs_data, envir=.GlobalEnv)'.")
@@ -94,7 +101,7 @@ fetch_full_path <- function(path, lookup, index) {
 read_sav_data <- function(filepath, columns, dataset_type, year) {
   if(!is.na(filepath)) {
     if(!is.null(columns)) {
-      data <- haven::read_sav(filepath, col_select = c(dplyr::starts_with("serial"), dplyr::all_of(columns)))
+      data <- haven::read_sav(filepath, col_select = c(dplyr::starts_with("serial"), dplyr::any_of(columns)))
     } else {
       data <- haven::read_sav(filepath)
     }
