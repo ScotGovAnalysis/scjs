@@ -52,7 +52,13 @@ df6 <-
 
 # check names_from = "original"
 df7 <-
-  scjs_harmonise_variable(data = "create", nvf_2018, var_list = c("qsfdark"), find_all_vars = TRUE)
+  scjs_harmonise_variable(data = "create", scjs_data, var_list = c("qsfdark"), find_all_vars = FALSE)
+
+df7 <-
+  scjs_harmonise_variable(data = "create", scjs_data, var_list = c("qsfdark"), find_all_vars = TRUE)
+
+df7 <-
+  scjs_harmonise_variable(data = "create", scjs_data, var_list = c("prevviolent"), find_all_vars = TRUE)
 
 df8 <- df7 |>
   scjs_harmonise_variable(nvf_2018, var_list = c("qsfdark"), find_all_vars = TRUE, join_method = "append")

@@ -69,7 +69,7 @@ scjs_harmonise_variable <- function(
   years_vec <- extract_year_var(df_list)
   # print(years_vec)
   latest_year <- max(years_vec)
-  print(paste("latest_year:", latest_year))
+  # print(paste("latest_year:", latest_year))
 
   # subset the variable map to the relevant parts
   vm_sub <- subset_variable_map(variable_map, var_list, years_vec, names_from, find_all_vars)
@@ -225,16 +225,20 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, f
 
       vm_dup_vars <- vm_grp |> dplyr::select(dplyr::all_of(as.character(latest_year))) |> dplyr::pull()
       vm_dup_pipeline_vars <-  vm_grp |> dplyr::select(var_name) |> dplyr::pull()
-      warning(paste(
-        "Found multiple results for some original variables, scjs_harmonise_variable() will only take the first result by default.",
-        "To keep all matches to the original variable name, use find_all_vars=TRUE in scjs_harmonise_variable().",
-        "\n",
-        "The duplicated variables are:",
-        paste(vm_dup_vars, collapse = ", "),
-        "\n",
-        "The unique 'pipeline' variables kept are:",
-        paste(vm_dup_pipeline_vars, collapse=", ")
-      ))
+
+      if (max(vm_grp$count) > 1) {
+        warning(paste(
+          "Found multiple results for some original variables, scjs_harmonise_variable() will only take the first result by default.",
+          "To keep all matches to the original variable name, use find_all_vars=TRUE in scjs_harmonise_variable().",
+          "\n",
+          "The duplicated variables are:",
+          paste(vm_dup_vars, collapse = ", "),
+          "\n",
+          "The unique 'pipeline' variables kept are:",
+          paste(vm_dup_pipeline_vars, collapse=", ")
+        ))
+      }
+
 
       vm_sub_final <- vm_grp
     } else if (find_all_vars == TRUE & max(vm_grp$count) > 1) {
@@ -249,6 +253,8 @@ subset_variable_map <- function(variable_map, var_list, years_vec, names_from, f
         "\n"),
         paste(vm_pairs_multi[1],"\n", vm_pairs_multi[2], sep="")
       )
+      vm_sub_final <- vm_grp
+    } else {
       vm_sub_final <- vm_grp
     }
 

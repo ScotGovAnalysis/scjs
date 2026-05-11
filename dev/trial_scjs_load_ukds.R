@@ -14,7 +14,7 @@ vars_to_load <- c(
 
 
 scjs_data <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), years_to_load = 2018:2019, columns = vars_to_load)
-scjs_data <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), columns = vars_to_load)
+# scjs_data <- scjs_load_ukds(path = Sys.getenv("USER_DATA_PATH"), columns = vars_to_load)
 
 list2env(scjs_data, envir=.GlobalEnv)
 
