@@ -9,6 +9,7 @@ vars_to_load <- c(
   "SIMD_TOP",
   "QCONDIT",
   "QLIMIT",
+  "QDGEN",
   "WGTGINDIV", # individual weight
   "WGTGHHD" # household weight
 )

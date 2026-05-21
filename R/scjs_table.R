@@ -433,3 +433,33 @@ rounding_method <- function(proportions, rounding_method) {
   }
 
 }
+
+# Table formatting ####
+pivot_ts_table <- function(table, time_grouping, result_type) {
+  pvt <- table |>
+    dplyr::select(.data[[time_grouping]], proportion, variable_name, crossbreak, subgroup, response) |>
+    tidyr::pivot_wider(names_from = time_grouping, values_from = c(result_type)) |>
+    dplyr::mutate(type = result_type, .after = "response")
+
+  pvt_base <- table |>
+    dplyr::select(.data[[time_grouping]], base, variable_name, crossbreak,subgroup, response) |>
+    tidyr::pivot_wider(names_from = time_grouping, values_from = c("base")) |>
+    dplyr::mutate(type = "unweighted base", .after = "response")
+
+  pvt_base_total <- table |>
+    dplyr::select(.data[[time_grouping]], base_total, variable_name, crossbreak, subgroup, response) |>
+    tidyr::pivot_wider(names_from = time_grouping, values_from = c("base_total")) |>
+    dplyr::mutate(type = "unweighted base", .after = "response") |>
+    dplyr::mutate(response = "total") |>
+    dplyr::group_by(subgroup) |>
+    dplyr::slice(1) |>
+    dplyr::ungroup()
+
+  sig <- table |>
+    dplyr::filter(.data[[time_grouping]] == dplyr::last(.data[[time_grouping]])) |>
+    dplyr::select(dplyr::starts_with("sig"))
+
+  pvt_sig <- dplyr::bind_cols(pvt, sig)
+
+  pvt_bind <- dplyr::bind_rows(pvt_sig, pvt_base, pvt_base_total)
+}
