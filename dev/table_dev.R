@@ -6,7 +6,12 @@ df_dev <-   scjs_harmonise_variable(
   names_from = "pipeline"
 )
 
-
+df_dev <- df_dev |>
+  scjs_harmonise_variable(
+    scjs_data,
+    var_list = c("prev_violent", "prev_property", "simd_15_most"),
+    names_from = "pipeline"
+)
 
 
 table <- scjs_table(df_dev, "time series", var=c("safety_walkingalone"))

@@ -222,7 +222,7 @@ add_significance_cols <- function(dataset, table_type, var, crossbreak, time_gro
 
     data_sig <- data_sig |>
       dplyr::mutate(sig_fromstart = significance_fromstart(proportion, ci_95)) |>
-      dplyr::mutate(sig_mostrecent = significance_mostrecent(proportion, ci_95, .data[["year"]])) |>
+      dplyr::mutate(sig_mostrecent = significance_mostrecent(proportion, ci_95, .data[[time_grouping]])) |>
       dplyr::ungroup()
 
     return(data_sig)
@@ -247,9 +247,8 @@ add_significance_cols <- function(dataset, table_type, var, crossbreak, time_gro
 significance_nstep <- function(proportion, ci, lag=1, rounding_method="table", format="prop") {
 
   not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
-  rounding <- if (rounding_method == "table") {
-    if (sum(proportion > 10, na.rm = TRUE) >= 2) 1 else 0
-  } else 2
+
+  rounding <- rounding_method(proportion, rounding_method)
 
   lag_prop <- dplyr::lag(proportion, n = lag)
   lag_ci <- dplyr::lag(ci, n = lag)
@@ -293,9 +292,7 @@ significance_fromstart <- function(proportion, ci, rounding_method = "table", fo
   # --- formatting options ---
   not_significant_symbol <- if (rounding_method == "table") "[ns]" else "."
 
-  rounding <- if (rounding_method == "table") {
-    if (sum(proportion > 10, na.rm = TRUE) >= 2) 1 else 0
-  } else 2
+  rounding <- rounding_method(proportion, rounding_method)
 
   # --- find first non-NA baseline ---
   first_idx <- which(!is.na(proportion))[1]
@@ -332,7 +329,7 @@ significance_fromstart <- function(proportion, ci, rounding_method = "table", fo
 
   dplyr::case_when(
     is.na(proportion) ~ NA_character_,
-    seq_along(proportion) == first_idx ~ NA_character_,
+    seq_along(proportion) == first_idx ~ "[z]",
     significant & diff > 0 ~ paste0("up by ", janitor::round_half_up(change_value, rounding), change_symbol),
     significant & diff < 0 ~ paste0("down by ", janitor::round_half_up(change_value, rounding), change_symbol),
     TRUE ~ not_significant_symbol
@@ -412,4 +409,27 @@ significance_allcombo <- function(proportion, ci, context_var, matrix_result = F
     }
   }
   return(full_results)
+}
+
+# determine how many decimal places to show changes in significance columns
+# essentially i want it to largely be 0dp when figures are > 10 and 1dp for < 10
+# or can just set it to be 2dp in all situations (rounding_method != "table")
+rounding_method <- function(proportions, rounding_method) {
+
+  if (rounding_method == "table") {
+    if (length(proportions) == 1) {
+      return(1)
+    }
+
+    # if more than half of non-na values
+    if (sum(proportions > 10, na.rm = TRUE) > length(proportions[!is.na(proportions)]) / 2) {
+      return(0)
+    } else {
+      return(1)
+    }
+
+  } else {
+    return(2)
+  }
+
 }
