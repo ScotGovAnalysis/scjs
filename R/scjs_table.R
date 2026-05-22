@@ -12,6 +12,7 @@
 #' @param result_type Used to specify whether data in the table is presented as a proportion or a volume.
 #' @param rounding_method Specifies how change in significance columns are presented, default value 'table' will round to 0dp when numbers are >10 and 1dp when below 10 - change value to round to 2dp.
 #' @param ts_significance_steps_back For time series tables, specifies how many time periods back to produce a significance column for, e.g. by default gives a result compared to 1 and 2 years prior.
+#' @param pivot For time series tables, determines whether the table should be pivoted to allow easier readability and better formatting, if FALSE then a less readable but more information dense table is returned.
 #' @param weighting_var Weight value to use in calculations - default is the harmonised individual weight from the non-victim form. Needs to be existing column in dataset.
 #'
 #' @export
@@ -26,6 +27,7 @@ scjs_table <- function(
     result_type="proportion",
     rounding_method="table",
     ts_significance_steps_back=2,
+    pivot=TRUE,
     weighting_var="weight_indiv"
 ) {
 
@@ -76,7 +78,16 @@ scjs_table <- function(
     ts_significance_steps_back = ts_significance_steps_back
   )
 
+  if (table_type == "time series" & pivot == TRUE) {
+    table_pivot <- pivot_ts_table(table_base_sig, time_grouping, result_type)
+    return(table_pivot)
+  } else if (table_type == "times series" & pivot == FALSE) {
+    return(table_base_sig)
+  }
 
+  if (table_type == "subgroup") {
+    table_subgroup_formatted <- format_subgroup(table_base_sig)
+  }
 
 
   return(table_base_sig)
@@ -151,7 +162,7 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
 
   table_base <- dataset_strip |>
     dplyr::group_by(across(any_of(c(time_grouping, var, unlist(crossbreak))))) |>
-    dplyr::summarise(sum_weight = sum(.data[[weighting_var]]),
+    dplyr::summarise(volume = sum(.data[[weighting_var]]),
                      base = dplyr::n(),
                      design_factor = max(design_factor)) |> # change max() to alter how design_factor is selected for combined years
     dplyr::ungroup()
@@ -160,7 +171,7 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
     table_base <- table_base |>
       dplyr::group_by(across(dplyr::any_of(c(time_grouping, crossbreak)))) |>
       dplyr::mutate(base_total = sum(base), .after = "base",,
-                    proportion = sum_weight / sum(sum_weight) * 100,
+                    proportion = volume / sum(volume) * 100,
                     se = sqrt((proportion) * (100 - (proportion)) / base_total),
                     ci_95 = se * stats::qnorm(0.975) * design_factor) |>
       dplyr::ungroup()
@@ -435,31 +446,43 @@ rounding_method <- function(proportions, rounding_method) {
 }
 
 # Table formatting ####
+# transforms a time series table so that the time variable can be read across columns horizontally
+# only keeps significance columns for most recent year as that is all that will fit and be contextually relevant to the new format
 pivot_ts_table <- function(table, time_grouping, result_type) {
+  # take the proportions components and pivot it wider
   pvt <- table |>
-    dplyr::select(.data[[time_grouping]], proportion, variable_name, crossbreak, subgroup, response) |>
+    dplyr::select(dplyr::any_of(c(time_grouping, result_type)), variable_name, crossbreak, subgroup, response) |>
     tidyr::pivot_wider(names_from = time_grouping, values_from = c(result_type)) |>
     dplyr::mutate(type = result_type, .after = "response")
 
+  # do same for unweighted base for each subgroup + response
   pvt_base <- table |>
-    dplyr::select(.data[[time_grouping]], base, variable_name, crossbreak,subgroup, response) |>
+    dplyr::select(dplyr::any_of(c(time_grouping)), base, variable_name, crossbreak, subgroup, response) |>
     tidyr::pivot_wider(names_from = time_grouping, values_from = c("base")) |>
     dplyr::mutate(type = "unweighted base", .after = "response")
 
+  # get total base size for each subgroup e.g. all males - this is what is used as base for significance calculations
   pvt_base_total <- table |>
-    dplyr::select(.data[[time_grouping]], base_total, variable_name, crossbreak, subgroup, response) |>
+    dplyr::select(dplyr::any_of(c(time_grouping)), base_total, variable_name, crossbreak, subgroup, response) |>
     tidyr::pivot_wider(names_from = time_grouping, values_from = c("base_total")) |>
     dplyr::mutate(type = "unweighted base", .after = "response") |>
-    dplyr::mutate(response = "total") |>
+    dplyr::mutate(response = "all responses") |>
     dplyr::group_by(subgroup) |>
     dplyr::slice(1) |>
     dplyr::ungroup()
 
-  sig <- table |>
-    dplyr::filter(.data[[time_grouping]] == dplyr::last(.data[[time_grouping]])) |>
-    dplyr::select(dplyr::starts_with("sig"))
+  # only grab significance columns if presenting table as proportions - only keeping cols for most recent year then binding
+  if (result_type == "proportion") {
+    sig <- table |>
+      dplyr::filter(.data[[time_grouping]] == dplyr::last(.data[[time_grouping]])) |>
+      dplyr::select(dplyr::starts_with("sig"))
 
-  pvt_sig <- dplyr::bind_cols(pvt, sig)
+    pvt <- dplyr::bind_cols(pvt, sig)
+  }
 
-  pvt_bind <- dplyr::bind_rows(pvt_sig, pvt_base, pvt_base_total)
+  pvt_bind <- dplyr::bind_rows(pvt, pvt_base, pvt_base_total)
+}
+
+format_subgroup <- function(table) {
+
 }
