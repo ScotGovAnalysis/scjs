@@ -86,11 +86,12 @@ scjs_table <- function(
   }
 
   if (table_type == "subgroup") {
-    table_subgroup_formatted <- format_subgroup(table_base_sig)
+    table_subgroup_formatted <- format_subgroup(table_base_sig, time_grouping)
+    return(table_subgroup_formatted)
   }
 
 
-  return(table_base_sig)
+  # return(table_base_sig)
 }
 
 # Helper functions ####
@@ -132,6 +133,9 @@ validate_table_inputs <- function(
   }
 
   # check variables requested are in the dataset
+  if (is.list(crossbreak)) {
+    crossbreak <- unlist(crossbreak) # need to unlist to get column comparison to work
+  }
   if (!all(c(var, crossbreak, time_grouping) %in% names(dataset))) {
     missing_vars <- setdiff(c(var, crossbreak, time_grouping), names(dataset))
     stop(paste("Source dataset has some missing variables - unable to proceed. Missing vars are:", paste(missing_vars, collapse = ", ")))
@@ -142,8 +146,12 @@ validate_table_inputs <- function(
 
 reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_grouping, weighting_var) {
   # reduce the number of columns
+  if (is.list(crossbreak)) {
+    crossbreak <- unlist(crossbreak)
+  }
+
   df_reduce <- dataset |>
-    dplyr::select(any_of(c(time_grouping, var, crossbreak, weighting_var)))
+    dplyr::select(year, any_of(c(time_grouping, var, crossbreak, weighting_var)))
 
   if (!is.null(time_period)) {
     df_reduce <- df_reduce |>
@@ -166,6 +174,14 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
                      base = dplyr::n(),
                      design_factor = max(design_factor)) |> # change max() to alter how design_factor is selected for combined years
     dplyr::ungroup()
+
+  if (length(crossbreak) > 1) {
+    crossbreak_temp <- paste(crossbreak, collapse = " and ")
+    table_base <- table_base |>
+      tidyr::unite("united_col", crossbreak, sep = " and ") |>
+      dplyr::rename("{crossbreak_temp}" := united_col)
+    crossbreak <- crossbreak_temp
+  }
 
   if (result_type == "proportion") {
     table_base <- table_base |>
@@ -483,6 +499,10 @@ pivot_ts_table <- function(table, time_grouping, result_type) {
   pvt_bind <- dplyr::bind_rows(pvt, pvt_base, pvt_base_total)
 }
 
-format_subgroup <- function(table) {
-
+format_subgroup <- function(table, time_grouping) {
+  # currently can't stats test volumes so just always keeping the proportion column for time being
+  table_subset <- table |>
+    dplyr::select(dplyr::any_of(time_grouping), variable_name, crossbreak, subgroup, response, base, base_total, proportion, sig_allcombo) |>
+    dplyr::arrange(response)
+  return(table_subset)
 }
