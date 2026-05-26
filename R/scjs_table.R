@@ -16,7 +16,6 @@
 #' @param weighting_var Weight value to use in calculations - default is the harmonised individual weight from the non-victim form. Needs to be existing column in dataset.
 #'
 #' @export
-#'
 scjs_table <- function(
     dataset,
     table_type,
