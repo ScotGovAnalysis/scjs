@@ -9,7 +9,7 @@ df_dev <-   scjs_harmonise_variable(
 df_dev <- df_dev |>
   scjs_harmonise_variable(
     scjs_data,
-    var_list = c("prev_violent", "prev_property", "simd_15_most"),
+    var_list = c("prev_violent", "prev_property", "simd_15_most", "disability"),
     names_from = "pipeline"
 )
 

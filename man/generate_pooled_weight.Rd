@@ -4,31 +4,33 @@
 \alias{generate_pooled_weight}
 \title{Create a table from SCJS data}
 \usage{
-generate_pooled_weight()
+generate_pooled_weight(
+  dataset,
+  weighting_var,
+  output_suffix = "_pooled",
+  keep_all_columns = FALSE
+)
 }
 \arguments{
-\item{dataset}{Input dataset to construct the table from}
+\item{dataset}{Input dataset to add the pooled weights to.}
 
-\item{table_type}{Specify what format the output table should take (time series / subgroup comparison etc.)}
+\item{weighting_var}{Variable to base the pooled weights on (nominally the
+name of the variable containing gross individual or household weights).}
 
-\item{var}{Single variable or vector specifying multiple variables to be presented in the resulting table}
+\item{output_suffix}{The suffix of the name of the new pooled weight
+variable. This is '\verb{_pooled}' by default.}
 
-\item{crossbreak}{Single variable or vector specifying multiple variables to act as cross breaks - usually a demographic variable, can be "total" for all respondents. NOTE: for intersectional split, crossbreak MUST be a list() with the desired intersection combination grouped by c() or list()}
-
-\item{time_period}{Used to restrict the years analysed in the table}
-
-\item{time_grouping}{Used to specify how years can be grouped together for pooled analysis - default is just survey year. Argument needs to be name of existing column in dataset.}
-
-\item{result_type}{Used to specify whether data in the table is presented as a proportion or a volume.}
-
-\item{rounding_method}{Specifies how change in significance columns are presented, default value 'table' will round to 0dp when numbers are >10 and 1dp when below 10 - change value to round to 2dp.}
-
-\item{ts_significance_steps_back}{For time series tables, specifies how many time periods back to produce a significance column for, e.g. by default gives a result compared to 1 and 2 years prior.}
-
-\item{pivot}{For time series tables, determines whether the table should be pivoted to allow easier readability and better formatting, if FALSE then a less readable but more information dense table is returned.}
-
-\item{weighting_var}{Weight value to use in calculations - default is the harmonised individual weight from the non-victim form. Needs to be existing column in dataset.}
+\item{keep_all_columns}{Boolean variable, \code{FALSE} by default, specifying
+whether to keep the columns used to calculate the pooled weights, or if
+\code{TRUE} keeps just the resulting weight column.}
+}
+\value{
+Returns a data frame object of the same dimensions of the input
+dataset with an added column for the pooled weight, as well as additional
+columns used for the calculation if \code{keep_all_columns=TRUE}.
 }
 \description{
-Takes an individual or harmonised set of SCJS data and builds a table using standard methods.
+Adds a pooled individual or household weight to a combined SCJS
+dataset. Implements the same methodology outlined in Appendix B of the
+published Scottish Government paper \href{https://www.gov.scot/publications/ethnicity-justice-system/pages/8/}{Ethnicity in the Justice System}.
 }

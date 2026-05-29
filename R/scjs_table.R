@@ -150,7 +150,7 @@ reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_gro
   }
 
   df_reduce <- dataset |>
-    dplyr::select(year, any_of(c(time_grouping, var, crossbreak, weighting_var)))
+    dplyr::select(year, dplyr::any_of(c(time_grouping, var, crossbreak, weighting_var)))
 
   if (!is.null(time_period)) {
     df_reduce <- df_reduce |>
@@ -168,7 +168,7 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
     dplyr::filter(!is.na(.data[[var]]))
 
   table_base <- dataset_strip |>
-    dplyr::group_by(across(any_of(c(time_grouping, var, unlist(crossbreak))))) |>
+    dplyr::group_by(dplyr::across(dplyr::any_of(c(time_grouping, var, unlist(crossbreak))))) |>
     dplyr::summarise(volume = sum(.data[[weighting_var]]),
                      base = dplyr::n(),
                      design_factor = max(design_factor)) |> # change max() to alter how design_factor is selected for combined years
@@ -184,7 +184,7 @@ base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_t
 
   if (result_type == "proportion") {
     table_base <- table_base |>
-      dplyr::group_by(across(dplyr::any_of(c(time_grouping, crossbreak)))) |>
+      dplyr::group_by(dplyr::across(dplyr::any_of(c(time_grouping, crossbreak)))) |>
       dplyr::mutate(base_total = sum(base), .after = "base",,
                     proportion = volume / sum(volume) * 100,
                     se = sqrt((proportion) * (100 - (proportion)) / base_total),

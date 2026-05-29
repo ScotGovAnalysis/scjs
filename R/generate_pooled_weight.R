@@ -1,9 +1,22 @@
 #' Create a table from SCJS data
 #'
-#' @description
-#' Adds a pooled individual or household weight to a combined SCJS dataset.
+#' @description Adds a pooled individual or household weight to a combined SCJS
+#' dataset. Implements the same methodology outlined in Appendix B of the
+#' published Scottish Government paper [Ethnicity in the Justice
+#' System](https://www.gov.scot/publications/ethnicity-justice-system/pages/8/).
 #'
-#' @param dataset Input dataset to add the pooled weights to
+#' @param dataset Input dataset to add the pooled weights to.
+#' @param weighting_var Variable to base the pooled weights on (nominally the
+#'   name of the variable containing gross individual or household weights).
+#' @param output_suffix The suffix of the name of the new pooled weight
+#'   variable. This is '`_pooled`' by default.
+#' @param keep_all_columns Boolean variable, `FALSE` by default, specifying
+#'   whether to keep the columns used to calculate the pooled weights if `TRUE`, or if
+#'   `FALSE` keeps just the resulting weight column.
+#'
+#' @returns Returns a data frame object of the same dimensions of the input
+#'   dataset with an added column for the pooled weight, as well as additional
+#'   columns used for the calculation if `keep_all_columns=TRUE`.
 #'
 #' @export
 generate_pooled_weight <- function(dataset, weighting_var, output_suffix="_pooled", keep_all_columns=FALSE) {
