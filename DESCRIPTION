@@ -12,6 +12,7 @@ Description: A package providing functions to import, harmonise and
     Integrates with data available from the UK Data Service (UKDS).
 License: MIT + file LICENSE
 Suggests: 
+    forcats,
     mockery,
     readxl,
     stringr,

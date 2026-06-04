@@ -2,14 +2,14 @@
 df_dev <-   scjs_harmonise_variable(
   data = "create",
   scjs_data,
-  var_list = c("safety_walkingalone", "sex", "weight_indiv"),
+  var_list = c("safety_walkingalone", "sex", "weight_indiv", "weight_household"),
   names_from = "pipeline"
 )
 
 df_dev <- df_dev |>
   scjs_harmonise_variable(
     scjs_data,
-    var_list = c("prev_violent", "prev_property", "simd_15_most", "disability"),
+    var_list = c("prev_violent", "prev_property", "prev_housebreaking", "simd_15_most", "disability"),
     names_from = "pipeline"
 )
 

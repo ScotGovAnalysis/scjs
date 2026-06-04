@@ -21,8 +21,8 @@ name of the variable containing gross individual or household weights).}
 variable. This is '\verb{_pooled}' by default.}
 
 \item{keep_all_columns}{Boolean variable, \code{FALSE} by default, specifying
-whether to keep the columns used to calculate the pooled weights, or if
-\code{TRUE} keeps just the resulting weight column.}
+whether to keep the columns used to calculate the pooled weights if \code{TRUE}, or if
+\code{FALSE} keeps just the resulting weight column.}
 }
 \value{
 Returns a data frame object of the same dimensions of the input
