@@ -54,3 +54,9 @@ df_dev <- df_dev |>
 table_pool <- scjs_table(df_dev, "time series", var=c("safety_walkingalone"), time_grouping = "all_scjs_years")
 table_pool <- scjs_table(df_dev, "time series", var=c("safety_walkingalone"), time_grouping = "split2")
 table_pool <- scjs_table(df_dev, "subgroup", var=c("safety_walkingalone"), time_grouping = "split2")
+
+
+
+# with synthetic data
+df_synth <- scjs_synthetic_data
+table_pool <- scjs_table(df_synth, "subgroup", var=c("safety_walkingalone"))

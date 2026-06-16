@@ -165,7 +165,9 @@ reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_gro
 base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_type, weighting_var) {
 
   dataset_strip <- dataset |>
-    dplyr::filter(!is.na(.data[[var]]))
+    dplyr::filter(!is.na(.data[[var]])) |>
+    dplyr::filter(!is.na(.data[[crossbreak]]))
+
 
   table_base <- dataset_strip |>
     dplyr::group_by(dplyr::across(dplyr::any_of(c(time_grouping, var, unlist(crossbreak))))) |>
@@ -501,7 +503,7 @@ pivot_ts_table <- function(table, time_grouping, result_type) {
 format_subgroup <- function(table, time_grouping) {
   # currently can't stats test volumes so just always keeping the proportion column for time being
   table_subset <- table |>
-    dplyr::select(dplyr::any_of(time_grouping), variable_name, crossbreak, subgroup, response, base, base_total, proportion, sig_allcombo) |>
+    dplyr::select(dplyr::any_of(time_grouping), variable_name, crossbreak, subgroup, response, base, base_total, proportion, ci_95, sig_allcombo) |>
     dplyr::arrange(response)
   return(table_subset)
 }
