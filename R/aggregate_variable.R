@@ -8,3 +8,10 @@
 aggregate_variable <- function(variable) {
   return("abc")
 }
+
+
+# need to take a vector and find the right specific aggregation function from a lookup and then perform the aggregation
+
+aggregation_lookup <- function() {
+
+}
