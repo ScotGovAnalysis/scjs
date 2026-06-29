@@ -103,9 +103,6 @@ validate_table_inputs <- function(
     weighting_var
 ) {
 
-  # 'total' from crossbreak
-  crossbreak <- crossbreak[which(crossbreak != "total")]
-
   # check that a data.frame object is supplied as the dataset argument
   if (!is.data.frame(dataset)) {
     stop("Argument 'dataset' must be supplied as a data.frame object.")
@@ -130,6 +127,9 @@ validate_table_inputs <- function(
   if (!weighting_var %in% names(dataset)) {
     stop("Unable to find weighting var in dataset. Default is harmonised version 'weight_indiv', specify if other weighting variable desired.")
   }
+
+  # remove 'total' from crossbreak
+  crossbreak <- crossbreak[which(crossbreak != "total")]
 
   # check variables requested are in the dataset
   if (is.list(crossbreak)) {
@@ -165,8 +165,12 @@ reduce_input_dataset <- function(dataset, var, crossbreak, time_period, time_gro
 base_summary_table <- function(dataset, var, crossbreak, time_grouping, result_type, weighting_var) {
 
   dataset_strip <- dataset |>
-    dplyr::filter(!is.na(.data[[var]])) |>
-    dplyr::filter(!is.na(.data[[crossbreak]]))
+    dplyr::filter(!is.na(.data[[var]]))
+  if (crossbreak != "total") {
+    dataset_strip <- dataset_strip |>
+      dplyr::filter(!is.na(.data[[crossbreak]]))
+  }
+
 
 
   table_base <- dataset_strip |>

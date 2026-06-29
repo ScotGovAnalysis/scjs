@@ -1,3 +1,8 @@
+# should be able to view a catalog of existing aggregations
+# examine the details of an existing aggregation
+
+
+
 dataset <- scjs_synthetic_data
 
 # implementation function

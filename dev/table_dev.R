@@ -60,3 +60,7 @@ table_pool <- scjs_table(df_dev, "subgroup", var=c("safety_walkingalone"), time_
 # with synthetic data
 df_synth <- scjs_synthetic_data
 table_pool <- scjs_table(df_synth, "subgroup", var=c("safety_walkingalone"))
+
+
+table_pool <- scjs_table(df_synth, "subgroup", var=c("safety_walkingalone"), crossbreak = "total")
+debug(base_summary_table)
